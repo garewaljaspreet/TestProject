@@ -8,4 +8,5 @@ package com.developers.uberanimation;
 public interface RoadsPresenterInteractor {
 
     void getRoute(String URL,int route);
+    void getDirection(String start, String end);
 }

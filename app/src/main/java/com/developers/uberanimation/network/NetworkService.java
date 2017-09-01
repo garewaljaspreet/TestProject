@@ -10,6 +10,7 @@ import android.util.Log;
 
 
 import com.developers.uberanimation.BeansMain;
+import com.developers.uberanimation.models.DirectionResults;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -33,11 +34,11 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 /**
- * Created by cteegarden on 1/25/16.
+ * Created by navdeepg
  */
 
 public class NetworkService {
-    public static String baseUrl ="https://roads.googleapis.com/";
+    public static String baseUrl ="https://roads.googleapis.com";
     private NetworkAPI networkAPI;
     private OkHttpClient okHttpClient;
     Context mContext;
@@ -108,14 +109,27 @@ public class NetworkService {
         return  builder.build();
     }
 
+    public void changeApiBaseUrl(String newApiBaseUrl) {
+        baseUrl = newApiBaseUrl;
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient)
+                .build();
+        networkAPI = retrofit.create(NetworkAPI.class);
+    }
 
     /**
      * all the Service alls to use for the retrofit requests.
      */
     public interface NetworkAPI {
 
-        @GET("v1/snapToRoads")//get list of completed trips
+        @GET("/v1/snapToRoads")//get list of completed trips
         Call<BeansMain> getPath(@Query("path")String path,@Query("interpolate")boolean interpolate,@Query("key")String key);
+
+        @GET("/maps/api/directions/json")//get list of completed trips
+        Call<DirectionResults> getDirection(@Query("origin") String origin, @Query("destination") String destination,@Query("path")String path);
         /*@GET("api/v1/rest/aggregate/trips/past-for-customer/{id}")//get list of completed trips
         Call<ArrayList<BeansTripsAggregate>> getPastTrips(@Path("id") String id);
 

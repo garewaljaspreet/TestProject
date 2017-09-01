@@ -2,6 +2,7 @@ package com.developers.uberanimation;
 
 import android.util.Log;
 
+import com.developers.uberanimation.models.DirectionResults;
 import com.developers.uberanimation.network.NetworkService;
 
 import retrofit2.Call;
@@ -28,18 +29,36 @@ public class RoadsPresenter implements RoadsPresenterInteractor{
             @Override
             public void onResponse(Call<BeansMain> call, Response<BeansMain> response) {
                 Log.e("Success","oyeeee"+response.body().getSnappedPoints().size());
-                if(route==1)
+                /*if(route==1)
                     view.firstRoute(response.body());
                 else if(route==2)
                     view.secondRoute(response.body());
                 else if(route==3)
                     view.thirdRoute(response.body());
                 else if(route==4)
-                    view.fourthRoute(response.body());
+                    view.fourthRoute(response.body());*/
             }
 
             @Override
             public void onFailure(Call<BeansMain> call, Throwable t) {
+                Log.e("Error","error");
+            }
+        });
+    }
+
+    @Override
+    public void getDirection(String start, String end) {
+
+        Call<DirectionResults> call = service.getAPI().getDirection(start,end,"AIzaSyCSnJ3DYh4SyUjHle6iHOea3GMpZnCcMjM");
+        call.enqueue(new Callback<DirectionResults>() {
+            @Override
+            public void onResponse(Call<DirectionResults> call, Response<DirectionResults> response) {
+                Log.e("Success","oyeeee"+response.body().toString());
+                view.onDirectionResult(response.body());
+            }
+
+            @Override
+            public void onFailure(Call<DirectionResults> call, Throwable t) {
                 Log.e("Error","error");
             }
         });

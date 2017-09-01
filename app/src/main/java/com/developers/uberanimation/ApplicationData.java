@@ -7,6 +7,7 @@ import android.support.multidex.MultiDexApplication;
 import android.widget.TextView;
 
 import com.developers.uberanimation.network.NetworkService;
+import com.mapbox.mapboxsdk.Mapbox;
 
 
 /**
@@ -35,6 +36,7 @@ public class ApplicationData extends MultiDexApplication{
         mInstance = this;
 
         networkService = new NetworkService(getApplicationContext());
+        Mapbox.getInstance(this, getString(R.string.access_token));
     }
     public NetworkService getNetworkService(){
         return networkService;

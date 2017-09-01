@@ -1,0 +1,79 @@
+<android.support.v7.widget.CardView
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    card_view:cardCornerRadius="10dp"
+    android:background="#ffffff"
+    card_view:cardElevation="10dp"
+    android:layout_margin="5dp">
+
+
+        <RelativeLayout
+            android:id="@+id/rlMain"
+            android:layout_width="fill_parent"
+            android:layout_height="100dp"
+            android:paddingLeft="10dp"
+            >
+
+            <ImageView
+                android:id="@+id/imgVehicle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="80dp"
+                android:minWidth="80dp"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                />
+            />
+
+            <RelativeLayout
+                android:id="@+id/rlCenter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@+id/imgVehicle"
+                android:layout_toLeftOf="@+id/rlOption">
+
+                <TextView
+                    android:id="@+id/txtCarName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:text="Dodge Challenger"
+                    android:singleLine="true"/>
+
+                <TextView
+                    android:id="@+id/txtNumberPlate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:singleLine="true"
+                    android:layout_below="@+id/txtCarName"
+                    android:layout_marginTop="5dp"
+                    android:text="Licence Plate: GREWAL"
+                    android:textColor="#000000" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/rlOption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    />
+
+            </RelativeLayout>
+
+    </RelativeLayout>
+
+</android.support.v7.widget.CardView>
