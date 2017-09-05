@@ -38,6 +38,11 @@
             android:name=".FetchAddressIntentService"
             android:exported="false" />
 
+        <service
+            android:name=".service.ChatterBoxService"
+            android:enabled="true"
+            android:exported="true" />
+
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps">
@@ -50,7 +55,7 @@
 
         <activity
             android:name=".FindAddress"
-            android:theme="@style/AppTheme"
+            android:theme="@style/AppTheme.NoActionBar"
            >
         </activity>
     </application>

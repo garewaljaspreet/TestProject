@@ -28,15 +28,14 @@ public class RoadsPresenter implements RoadsPresenterInteractor{
         call.enqueue(new Callback<BeansMain>() {
             @Override
             public void onResponse(Call<BeansMain> call, Response<BeansMain> response) {
-                Log.e("Success","oyeeee"+response.body().getSnappedPoints().size());
-                /*if(route==1)
+                if(route==1)
                     view.firstRoute(response.body());
                 else if(route==2)
                     view.secondRoute(response.body());
                 else if(route==3)
                     view.thirdRoute(response.body());
                 else if(route==4)
-                    view.fourthRoute(response.body());*/
+                    view.fourthRoute(response.body());
             }
 
             @Override

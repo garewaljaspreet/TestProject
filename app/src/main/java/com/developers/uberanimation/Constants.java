@@ -8,15 +8,8 @@ public final class Constants {
 
     public static final int FAILURE_RESULT = 1;
 
-    public static final String PUBNUB_HYBRID_PUBLISH_KEY="pub-c-8bd3472e-ea78-4041-b50c-8a836f45192b";
-    public static final String PUBNUB_HYBRID_SUBSCRIBE_KEY="sub-c-c11f45a2-68d7-11e6-8a59-0619f8945a4f";
-
-    public static final String PUBNUB_CUSTOMER_PUBLISH_KEY="pub-c-c65563aa-3094-4cd7-afd7-4cca6655dd35";
-    public static final String PUBNUB_CUSTOMER_SUBSCRIBE_KEY="sub-c-12b71da0-6017-11e6-93b1-02ee2ddab7fe";
-
-    public static final String PUBNUB_DRIVER_PUBLISH_KEY="pub-c-e9a20261-d6da-4cf5-99d0-5b4fb69b8292";
-    public static final String PUBNUB_DRIVER_SUBSCRIBE_KEY="sub-c-93f923d8-6015-11e6-93b1-02ee2ddab7fe";
-
+    public static final String PUBNUB_HYBRID_PUBLISH_KEY="pub-c-28e27d5f-e42e-4c8e-8e2e-20bdf835f351";
+    public static final String PUBNUB_HYBRID_SUBSCRIBE_KEY="sub-c-a44f342a-91ec-11e7-90d4-96e49cd71a63";
 
     public static final String PACKAGE_NAME =
             "com.google.android.gms.location.sample.locationaddress";

@@ -1,79 +1,46 @@
-<android.support.v7.widget.CardView
+<RelativeLayout
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/card_view"
+    android:id="@+id/rlMain"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    card_view:cardCornerRadius="10dp"
     android:background="#ffffff"
-    card_view:cardElevation="10dp"
-    android:layout_margin="5dp">
+    android:paddingLeft="25dp"
+    android:paddingRight="25dp">
 
 
-        <RelativeLayout
-            android:id="@+id/rlMain"
-            android:layout_width="fill_parent"
-            android:layout_height="100dp"
-            android:paddingLeft="10dp"
-            >
+    <RelativeLayout
+        android:id="@+id/rlCenter"
+        android:layout_width="match_parent"
+        android:gravity="center_vertical"
+        android:layout_height="75dp"
+        >
 
-            <ImageView
-                android:id="@+id/imgVehicle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="80dp"
-                android:minWidth="80dp"
-                android:layout_alignParentLeft="true"
-                android:layout_centerVertical="true"
-                />
-            />
+        <com.developers.uberanimation.CustomTextView
+            android:id="@+id/txtPrimary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerHorizontal="true"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:maxLines="1"/>
 
-            <RelativeLayout
-                android:id="@+id/rlCenter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:layout_centerVertical="true"
-                android:layout_toRightOf="@+id/imgVehicle"
-                android:layout_toLeftOf="@+id/rlOption">
-
-                <TextView
-                    android:id="@+id/txtCarName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerHorizontal="true"
-                    android:text="Dodge Challenger"
-                    android:singleLine="true"/>
-
-                <TextView
-                    android:id="@+id/txtNumberPlate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerHorizontal="true"
-                    android:singleLine="true"
-                    android:layout_below="@+id/txtCarName"
-                    android:layout_marginTop="5dp"
-                    android:text="Licence Plate: GREWAL"
-                    android:textColor="#000000" />
-
-            </RelativeLayout>
-
-            <RelativeLayout
-                android:id="@+id/rlOption"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:layout_centerVertical="true"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp">
-                <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    />
-
-            </RelativeLayout>
+        <com.developers.uberanimation.CustomTextView
+            android:id="@+id/txtSecondry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:maxLines="1"
+            android:textSize="12sp"
+            android:layout_below="@+id/txtPrimary"
+            android:layout_marginTop="5dp"
+            android:textColor="#000000" />
 
     </RelativeLayout>
-
-</android.support.v7.widget.CardView>
+<View
+    android:layout_below="@+id/rlCenter"
+    android:layout_width="match_parent"
+    android:background="#F5DBDBDB"
+    android:layout_height="1dp"/>
+</RelativeLayout>

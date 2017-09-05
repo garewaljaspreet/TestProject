@@ -1,22 +1,11 @@
 package com.developers.uberanimation;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
-
-import com.google.android.gms.location.places.AutocompletePrediction;
 
 import java.util.ArrayList;
 
@@ -34,20 +23,22 @@ public class VehicleListAdapter extends RecyclerView.Adapter<VehicleListAdapter.
         notifyDataSetChanged();
     }
 
+    public void clear() {
+        int size = this.responseVehicle.size();
+        this.responseVehicle.clear();
+        notifyItemRangeRemoved(0, size);
+    }
+
     public class SimpleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-        public final TextView txtCarName,txtNumberPlate;
-        public final ImageView imgVehicle;
-        public final RelativeLayout rlMain,rlOption;
+        public final CustomTextView txtPrimary,txtSecondry;
+        public final RelativeLayout rlMain;
         public SimpleViewHolder(View view) {
             super(view);
-            txtCarName = (TextView) view.findViewById(R.id.txtCarName);
-            txtNumberPlate = (TextView) view.findViewById(R.id.txtNumberPlate);
-            imgVehicle = (ImageView) view.findViewById(R.id.imgVehicle);
+            txtPrimary = (CustomTextView) view.findViewById(R.id.txtPrimary);
+            txtSecondry = (CustomTextView) view.findViewById(R.id.txtSecondry);
             rlMain = (RelativeLayout) view.findViewById(R.id.rlMain);
-            rlOption = (RelativeLayout) view.findViewById(R.id.rlOption);
 
             rlMain.setOnClickListener(this);
-            rlOption.setOnClickListener(this);
         }
 
         @Override
@@ -70,9 +61,9 @@ public class VehicleListAdapter extends RecyclerView.Adapter<VehicleListAdapter.
     @Override
     public void onBindViewHolder(SimpleViewHolder holder, final int position) {
 
-        holder.txtCarName.setText(responseVehicle.get(position).getStrFullTxt());
+        holder.txtPrimary.setText(responseVehicle.get(position).getStrFullTxt());
 
-        holder.txtNumberPlate.setText(responseVehicle.get(position).getStrPrimaryTxt());
+        holder.txtSecondry.setText(responseVehicle.get(position).getStrPrimaryTxt());
     }
 
     @Override

@@ -4,8 +4,9 @@ package com.developers.uberanimation;
  * Created by navdeepg on 2017-08-29.
  */
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -16,9 +17,9 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AutoCompleteTextView;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -30,20 +31,21 @@ import com.google.android.gms.location.places.AutocompletePredictionBuffer;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
-import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class FindAddress extends AppCompatActivity implements ISelectAddress,GoogleApiClient.OnConnectionFailedListener,GoogleApiClient.ConnectionCallbacks{
+public class FindAddress extends AppCompatActivity implements View.OnClickListener,ISelectAddress,GoogleApiClient.OnConnectionFailedListener,GoogleApiClient.ConnectionCallbacks{
 
     RecyclerView recyclerView;
     EditText edCurrent,edDest;
+    RelativeLayout rlPick,rlPickDest;
     TextView txtSkip;
     GoogleApiClient mGoogleApiClient;
     Place startAdd,endAdd;
     boolean IS_Start=false;
     VehicleListAdapter mAdapter;
+    TextWatcher txtWatchCurrent,txtWatchDest;
     ArrayList<BeansPrediction> resultList = new ArrayList<BeansPrediction>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +54,12 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
         edCurrent=(EditText) findViewById(R.id.edCurrent);
         edDest=(EditText) findViewById(R.id.edDest);
         txtSkip=(TextView) findViewById(R.id.txtSkip);
+        rlPick=(RelativeLayout) findViewById(R.id.rlPick);
+        rlPickDest=(RelativeLayout) findViewById(R.id.rlPickDest);
+        rlPick.setOnClickListener(this);
+        rlPickDest.setOnClickListener(this);
         recyclerView=(RecyclerView) findViewById(R.id.recyclerView);
+        txtSkip.setVisibility(View.GONE);
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Places.GEO_DATA_API)
@@ -63,8 +70,23 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
         if(mGoogleApiClient!=null)
             mGoogleApiClient.connect();
 
+
+        edCurrent.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                edCurrent.setCursorVisible(true);
+                edCurrent.setSelection(edCurrent.getText().length());
+            }
+        });
+        edDest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                edDest.setCursorVisible(true);
+                edDest.setSelection(edDest.getText().length());
+            }
+        });
         setAdapter();
-        edCurrent.addTextChangedListener(new TextWatcher() {
+        txtWatchCurrent=new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -82,7 +104,7 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
                             // Iterate through results and display them in list or other UI
 
                             Iterator<AutocompletePrediction> iterator = autocompletePredictions.iterator();
-                           resultList = new ArrayList<BeansPrediction>();
+                            resultList = new ArrayList<BeansPrediction>();
                             while (iterator.hasNext()) {
                                 IS_Start=true;
                                 AutocompletePrediction prediction = iterator.next();
@@ -93,7 +115,7 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
                                 resultList.add(beansPrediction);
                                 // Only include U.S. cities
                                 // States only have 1 comma (e.g. AK, United States). Don't include states.
-                               Log.e("Result",prediction.getPrimaryText(null)+"  "+prediction.getFullText(null).toString());
+                                Log.e("Result",prediction.getPrimaryText(null)+"  "+prediction.getFullText(null).toString());
 
                             }
                             mAdapter.notifyData(resultList);
@@ -123,10 +145,10 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
             @Override
             public void afterTextChanged(Editable s) {
             }
-        });
+        };
+        edCurrent.addTextChangedListener(txtWatchCurrent);
 
-
-        edDest.addTextChangedListener(new TextWatcher() {
+        txtWatchDest=new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -181,7 +203,8 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
             @Override
             public void afterTextChanged(Editable s) {
             }
-        });
+        };
+        edDest.addTextChangedListener(txtWatchDest);
 
         txtSkip.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -196,7 +219,7 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
                 beans.setEndLatitude(endAdd.getLatLng().latitude);
                 Intent intent=new Intent();
                 intent.putExtra("addressInfo",beans);
-                setResult(1,intent);
+                setResult(2,intent);
                 finish();
             }
         });
@@ -242,12 +265,26 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
                 if (places.getStatus().isSuccess()) {
                     Place place=places.get(0);
                     if(IS_Start) {
+                        txtSkip.setVisibility(View.VISIBLE);
+                        hideSoftKeyboard(FindAddress.this,edCurrent);
+                        edCurrent.setCursorVisible(false);
+                        edCurrent.removeTextChangedListener(txtWatchCurrent);
                         startAdd = place;
                         edCurrent.setText(places.get(0).getAddress().toString());
+                        edCurrent.setSelection(edCurrent.getText().length());
+                        mAdapter.clear();
+                        edCurrent.addTextChangedListener(txtWatchCurrent);
+
                     }
                     else {
+                        hideSoftKeyboard(FindAddress.this,edDest);
+                        edDest.setCursorVisible(false);
+                        edDest.removeTextChangedListener(txtWatchDest);
                         endAdd = place;
                         edDest.setText(places.get(0).getAddress().toString());
+                        mAdapter.clear();
+                        edDest.setSelection(edDest.getText().length());
+                        edDest.addTextChangedListener(txtWatchDest);
                     }
 
                     Log.e("Success"," "+places.get(0).getLatLng().longitude+"    "+places.get(0).getLatLng().latitude+"   ");
@@ -260,5 +297,22 @@ public class FindAddress extends AppCompatActivity implements ISelectAddress,Goo
 
     }
 
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.rlPick:
+                edCurrent.setText("");
+                break;
 
+            case R.id.rlPickDest:
+                edDest.setText("");
+                break;
+        }
+    }
+
+    public static void hideSoftKeyboard (Activity activity, View view)
+    {
+        InputMethodManager imm = (InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+    }
 }

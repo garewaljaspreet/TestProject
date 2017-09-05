@@ -1,45 +1,43 @@
 package com.developers.uberanimation;
 
-import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.developers.uberanimation.models.BeansPickAddress;
 import com.developers.uberanimation.models.DirectionResults;
 import com.developers.uberanimation.models.Route;
 import com.developers.uberanimation.models.Steps;
 import com.developers.uberanimation.network.NetworkService;
+import com.developers.uberanimation.service.ChatterBoxService;
+import com.developers.uberanimation.service.DefaultChatterBoxCallback;
+import com.developers.uberanimation.service.binder.ChatterBoxClient;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -51,41 +49,33 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.SquareCap;
 import com.google.maps.android.PolyUtil;
-import com.mapbox.mapboxsdk.storage.Resource;
-
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.w3c.dom.ls.LSException;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
-import static com.google.android.gms.maps.model.JointType.ROUND;
-
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener{
+public class MapsActivity extends FragmentActivity implements View.OnClickListener,OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener{
 
     private static final String TAG = MapsActivity.class.getSimpleName();
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
     private Button btnFrom,btnTo;
-    RelativeLayout rlSelect,rlProgress;
+    CustomTextView txtCurrentLocation;
+    ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
+    CustomTextView txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest;
+    RelativeLayout rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay;
+    RelativeLayout rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain;
     private List<LatLng> polyLineList;
     private Marker marker1,marker2,marker3,marker4,marker5;
     boolean IS_ADDRESS_SEARCHED=false;// check is address search is in process or not to avoid multiple calls
@@ -94,11 +84,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Float zoomLevel=17f;//initial map zoom level
     private Location mLastLocation,mCurrentLoc;//Represents last known location
     ImageView imgCenterPin;
+    ImageView btnPickDest,btnPick;
     private BeansPickAddress locationObj,oldLocationObj;
     private float v;
+    private ChatterBoxClient chatterBoxServiceClient;       //To access service methods
     BeansAPNS beansAPNS;
     private double lat, lng;
     LatLng startPostion,endPosition;
+    LatLng startLat,startLng,endLat,endLng;
     boolean IsStartSet=false,IsEndSet=false;
     Resources resources;
     private GoogleApiClient mGoogleApiClient;//Provides the entry point to Google Play services.
@@ -123,6 +116,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     NetworkService service;
 
 
+    /**
+     * Service to connect with Pubnub
+     */
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            chatterBoxServiceClient = (ChatterBoxClient) service;
+            initListenerPubnub();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+        }
+
+    };
+
+
+    @Override
+    protected void onDestroy() {
+        unbindService(serviceConnection);
+        super.onDestroy();
+    }
+
     @Override
     public void onStop() {
         super.onStop();
@@ -144,6 +160,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        Intent intent = new Intent(this, ChatterBoxService.class); //Bind service for Pubnub
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+
         resources=getResources();
         mResultReceiver = new AddressResultReceiver(new Handler());
         mLocationRequest = LocationRequest.create()
@@ -159,24 +178,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         polyLineList = new ArrayList<>();
         btnFrom= (Button) findViewById(R.id.btnFrom);
         imgCenterPin= (ImageView) findViewById(R.id.imgCenterPin);
+        btnPick= (ImageView) findViewById(R.id.btnPick);
+        btnPickDest= (ImageView) findViewById(R.id.btnPickDest);
         rlSelect= (RelativeLayout) findViewById(R.id.rlSelect);
+        rlSelectMain= (RelativeLayout) findViewById(R.id.rlSelectMain);
         rlProgress= (RelativeLayout) findViewById(R.id.rlProgress);
+        rlCurrentLocation= (RelativeLayout) findViewById(R.id.rlCurrentLocation);
+        txtCurrentLocation= (CustomTextView) findViewById(R.id.txtCurrentLocation);
+        rlDestLoc= (RelativeLayout) findViewById(R.id.rlDestLoc);
         btnTo= (Button) findViewById(R.id.btnTo);
+        rlMainRequestTaxiLay=(RelativeLayout)findViewById(R.id.rlMainRequestTaxiLay);
+
+        imgTaxi=(ImageView)findViewById(R.id.imgTaxi);
+        imgMyCar=(ImageView)findViewById(R.id.imgMyCar);
+        imgRideShare=(ImageView)findViewById(R.id.imgRideshare);
+        imgPartition=(ImageView)findViewById(R.id.imgPartition);
+        rlPriceInfo=(RelativeLayout)findViewById(R.id.rlpriceInfo);
+        txtPrice=(CustomTextView)findViewById(R.id.txtPrice);
+        txtRequestRide=(CustomTextView)findViewById(R.id.txtRequestRide);
+        txtLocDest=(CustomTextView)findViewById(R.id.txtLocDest);
+        txtTaxi=(CustomTextView)findViewById(R.id.txtTaxi);
+        txtTimeTaxi=(CustomTextView)findViewById(R.id.txtTimeTaxi);
+        txtRideShare=(CustomTextView)findViewById(R.id.txtRideShare);
+        txtTimeRideshare=(CustomTextView)findViewById(R.id.txtTimeRideshare);
+        txtMyCar=(CustomTextView)findViewById(R.id.txtMyCar);
+        txtChooseDriver=(CustomTextView)findViewById(R.id.txtChooseDriver);
+        txtClose=(CustomTextView)findViewById(R.id.txtClose);
+        rlPriceInfo.setBackgroundResource(R.drawable.rounded_border);
+        imgTaxi.setBackgroundResource(R.drawable.taxi_icon_on);
+        txtClose.setOnClickListener(this);
+        imgTaxi.setOnClickListener(this);
+        imgMyCar.setOnClickListener(this);
+        imgRideShare.setOnClickListener(this);
+        rlMainRequestTaxiLay.setOnClickListener(this);
+        txtCurrentLocation.setOnClickListener(this);
+        txtPrice.setText("$6.00");
+        txtRequestRide.setText("Request Taxi");
+        txtTaxi.setTextColor(Color.parseColor("#272727"));
+        txtTimeTaxi.setTextColor(Color.parseColor("#272727"));
         mapFragment.getMapAsync(MapsActivity.this);
 
-        btnFrom.setOnClickListener(new View.OnClickListener() {
+        btnPick.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               /* Intent intent=new Intent(MapsActivity.this,FindAddress.class);
-                startActivityForResult(intent,1);*/
+
+                subscribePubnub();
                 mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
                         .flat(true)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
                 imgCenterPin.setBackgroundResource(R.drawable.destination_flag);
+                rlDestLoc.setVisibility(View.VISIBLE);
                 IsStartSet=true;
             }
         });
-        btnTo.setOnClickListener(new View.OnClickListener() {
+        btnPickDest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                /* Intent intent=new Intent(MapsActivity.this,FindAddress.class);
@@ -188,7 +243,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 IsEndSet=true;
                 showPolyAnim(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
                 rlSelect.setVisibility(View.GONE);
+                rlSelectMain.setVisibility(View.GONE);
                 rlProgress.setVisibility(View.VISIBLE);
+                rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
             }
         });
 
@@ -327,40 +384,122 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-
-    private List<LatLng> decodePoly(String encoded) {
-        List<LatLng> poly = new ArrayList<>();
-        int index = 0, len = encoded.length();
-        int lat = 0, lng = 0;
-
-        while (index < len) {
-            int b, shift = 0, result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lat += dlat;
-
-            shift = 0;
-            result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lng += dlng;
-
-            LatLng p = new LatLng((((double) lat / 1E5)),
-                    (((double) lng / 1E5)));
-            poly.add(p);
+    public void subscribePubnub()
+    {
+        if(chatterBoxServiceClient!=null)
+        {
+            chatterBoxServiceClient.subscribeChat("TestChat");
         }
 
-        return poly;
     }
 
+    /**
+     * Method to initialize pubnub listener. Called only once from this base activity.
+     */
+    public void initListenerPubnub()
+    {
+        if(chatterBoxServiceClient!=null)
+        {
+            chatterBoxServiceClient.initListener(chatListener);
+        }
+
+    }
+
+    /**
+     * Callback for pubnub chat listener
+     */
+
+    private DefaultChatterBoxCallback chatListener =new DefaultChatterBoxCallback(){
+
+        @Override
+        public void onMessage(BeansMessage message) {
+            super.onMessage(message);
+
+            Log.e("Message","AYA"+message.getMessage());
+
+        }
+    };
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.imgTaxi:
+                rlPriceInfo.setBackgroundResource(R.drawable.rounded_border);
+                imgTaxi.setBackgroundResource(R.drawable.taxi_icon_on);
+                imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_off);
+                imgMyCar.setBackgroundResource(R.drawable.chauffeur_grey);
+                txtPrice.setVisibility(View.VISIBLE);
+                imgPartition.setVisibility(View.VISIBLE);
+                txtPrice.setText("$6.00");
+                txtRequestRide.setText("Request Taxi");
+                txtTaxi.setTextColor(Color.parseColor("#272727"));
+                txtTimeTaxi.setTextColor(Color.parseColor("#272727"));
+                txtRideShare.setTextColor(Color.parseColor("#cdcdcd"));
+                txtTimeRideshare.setTextColor(Color.parseColor("#cdcdcd"));
+                txtMyCar.setTextColor(Color.parseColor("#cdcdcd"));
+                txtChooseDriver.setTextColor(Color.parseColor("#cdcdcd"));
+                break;
+            case R.id.imgRideshare:
+                rlPriceInfo.setBackgroundResource(R.drawable.rounded_border_blue);
+                imgTaxi.setBackgroundResource(R.drawable.taxi_icon_off);
+                imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_on);
+                imgMyCar.setBackgroundResource(R.drawable.chauffeur_grey);
+                txtPrice.setVisibility(View.VISIBLE);
+                imgPartition.setVisibility(View.VISIBLE);
+                txtPrice.setText("$6.00");
+                txtRequestRide.setText("Request Rideshare");
+                txtTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+                txtTimeTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+                txtRideShare.setTextColor(Color.parseColor("#272727"));
+                txtTimeRideshare.setTextColor(Color.parseColor("#272727"));
+                txtMyCar.setTextColor(Color.parseColor("#cdcdcd"));
+                txtChooseDriver.setTextColor(Color.parseColor("#cdcdcd"));
+                break;
+            case R.id.imgMyCar:
+                rlPriceInfo.setBackgroundResource(R.drawable.rounded_border_green);
+                imgTaxi.setBackgroundResource(R.drawable.taxi_icon_off);
+                imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_off);
+                imgMyCar.setBackgroundResource(R.drawable.chauffeur_icon_on);
+                txtPrice.setVisibility(View.GONE);
+                imgPartition.setVisibility(View.GONE);
+                txtRequestRide.setText("Choose Driver");
+                txtTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+                txtTimeTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+                txtRideShare.setTextColor(Color.parseColor("#cdcdcd"));
+                txtTimeRideshare.setTextColor(Color.parseColor("#cdcdcd"));
+                txtMyCar.setTextColor(Color.parseColor("#272727"));
+                txtChooseDriver.setTextColor(Color.parseColor("#272727"));
+                break;
+
+            case R.id.rlMainRequestTaxiLay:
+                break;
+
+            case R.id.txtCurrentLocation:
+                  Intent intent=new Intent(MapsActivity.this,FindAddress.class);
+                startActivityForResult(intent,1);
+                break;
+
+            case R.id.txtClose:
+               initView();
+
+            case R.id.imgLoc:
+
+            break;
+        }
+    }
+
+    private void initView()
+    {
+        rlMainRequestTaxiLay.setVisibility(View.GONE);
+        rlSelectMain.setVisibility(View.VISIBLE);
+        mMap.clear();
+        imgCenterPin.setVisibility(View.VISIBLE);
+        imgCenterPin.setBackgroundResource(R.drawable.client_pin_centered);
+        rlDestLoc.setVisibility(View.GONE);
+        IsStartSet=false;
+        IsEndSet=false;
+        rlProgress.setVisibility(View.GONE);
+        animationStart();
+    }
     /*private float getBearing(LatLng begin, LatLng end) {
         double lat = Math.abs(begin.latitude - end.latitude);
         double lng = Math.abs(begin.longitude - end.longitude);
@@ -513,15 +652,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        beansAPNS=data.getParcelableExtra("addressInfo");
-        Log.e("STRATRT",beansAPNS.getStartLatitude()+"   "+beansAPNS.getStartLongitude());
-        Marker markerStart = mMap.addMarker(new MarkerOptions().position(new LatLng(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude()))
-                .flat(true)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
-        Marker markerend = mMap.addMarker(new MarkerOptions().position(new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude()))
-                .flat(true)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
-        showPolyAnim(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude(),beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
+        if(resultCode==2)
+        {
+            rlSelect.setVisibility(View.GONE);
+            rlSelectMain.setVisibility(View.GONE);
+            rlProgress.setVisibility(View.VISIBLE);
+            rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
+            beansAPNS=data.getParcelableExtra("addressInfo");
+            Log.e("STRATRT",beansAPNS.getStartLatitude()+"   "+beansAPNS.getStartLongitude());
+            Marker markerStart = mMap.addMarker(new MarkerOptions().position(new LatLng(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude()))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+            Marker markerend = mMap.addMarker(new MarkerOptions().position(new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude()))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+            startPostion=new LatLng(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude());
+            endPosition=new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
+            showPolyAnim(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude(),beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
+        }
 
     }
 
@@ -552,6 +700,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onDirectionResult(DirectionResults directionResults)
     {
         ArrayList<LatLng> routelist = new ArrayList<LatLng>();
+        routelist.add(startPostion);
         if(directionResults.getRoutes().size()>0){
             List<LatLng> decodelist;
             Route routeA = directionResults.getRoutes().get(0);
@@ -577,7 +726,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
-        //routelist.add(new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude()));
+        routelist.add(endPosition);
         startAnim(routelist);
     }
 
@@ -685,6 +834,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.getUiSettings().setMapToolbarEnabled(false);
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
+
+
         }
         catch(SecurityException e)
         {
@@ -828,7 +979,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     {
         try {
             Log.e("Add",addressText);
-            //txtPinAddress.setText(addressText);
+            if(!IsStartSet)
+            txtCurrentLocation.setText(addressText);
+            else
+                txtLocDest.setText(addressText);
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             mMap.getUiSettings().setMapToolbarEnabled(false);
             mMap.setMyLocationEnabled(true);
@@ -849,13 +1003,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         editor.putString(resources.getString(R.string.loc_lng_lastsaved), String.valueOf(lastLng));
         editor.apply();
     }
-}
 
-
-/*
-button.setOnClickListener(new View.OnClickListener() {
-@Override
-public void onClick(View view) {
+    private void animationStart(){
         i=0;
         j=0;
         k=0;
@@ -865,17 +1014,17 @@ public void onClick(View view) {
 
         progressUpdater=new Runnable(){
 
-@Override
-public void run() {
-        if(i<firstRouteList.size())
-        {
-        //LatLng newPos = new LatLng(lat, lng);
-        // marker.setPosition(newPos);
+            @Override
+            public void run() {
+                if(i<firstRouteList.size())
+                {
+                    //LatLng newPos = new LatLng(lat, lng);
+                    // marker.setPosition(newPos);
 
-        //marker.setRotation(getBearing(startPosition, newPos));
-                           */
+                    //marker.setRotation(getBearing(startPosition, newPos));
+
 /* rotateMarker(marker,Float.parseFloat(String.valueOf(getBearing(startPosition, loc.get(i)))));
-                            animateUserMarkerToGB(marker,loc.get(i));*//*
+                            animateUserMarkerToGB(marker,loc.get(i));*/
 
 
         // float rotation = (float) SphericalUtil.computeHeading(old, new);
@@ -937,86 +1086,69 @@ public void run() {
         progressUpdater.run();
 
         }
-        });
 
-        }
-
-protected void firstRoute(BeansMain beansMain)
-        {
+    protected void firstRoute(BeansMain beansMain)
+    {
         firstRouteList=new ArrayList<>();
         for (int i=0;i<beansMain.getSnappedPoints().size();i++)
         {
-        LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
-        firstRouteList.add(latLng);
+            LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
+            firstRouteList.add(latLng);
         }
         startPosition1=firstRouteList.get(0);
         marker1 = mMap.addMarker(new MarkerOptions().position(startPosition1)
-        .flat(true)
-        .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
+                .flat(true)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
         marker1.setAnchor(0.5f, 0.5f);
         presenter.getRoute(url2,2);
-        }
+    }
 
-protected void secondRoute(BeansMain beansMain)
-        {
+    protected void secondRoute(BeansMain beansMain)
+    {
         secondRouteList=new ArrayList<>();
         for (int i=0;i<beansMain.getSnappedPoints().size();i++)
         {
-        LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
-        secondRouteList.add(latLng);
+            LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
+            secondRouteList.add(latLng);
         }
         startPosition2=secondRouteList.get(0);
         marker2 = mMap.addMarker(new MarkerOptions().position(startPosition2)
-        .flat(true)
-        .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
+                .flat(true)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
         marker2.setAnchor(0.5f, 0.5f);
         presenter.getRoute(url3,3);
-        }
+    }
 
-protected void thirdRoute(BeansMain beansMain)
-        {
+    protected void thirdRoute(BeansMain beansMain)
+    {
         thirdRouteList=new ArrayList<>();
         for (int i=0;i<beansMain.getSnappedPoints().size();i++)
         {
-        LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
-        thirdRouteList.add(latLng);
+            LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
+            thirdRouteList.add(latLng);
         }
         startPosition3=thirdRouteList.get(0);
         marker3 = mMap.addMarker(new MarkerOptions().position(startPosition3)
-        .flat(true)
-        .icon(BitmapDescriptorFactory.fromResource(R.drawable.taxi)));
+                .flat(true)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.taxi)));
         marker3.setAnchor(0.5f, 0.5f);
         presenter.getRoute(url4,4);
-        }
+    }
 
-protected void fourthRoute(BeansMain beansMain)
-        {
+    protected void fourthRoute(BeansMain beansMain)
+    {
         fourthRouteList=new ArrayList<>();
         for (int i=0;i<beansMain.getSnappedPoints().size();i++)
         {
-        LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
-        fourthRouteList.add(latLng);
+            LatLng latLng=new LatLng(beansMain.getSnappedPoints().get(i).getLocation().getLatitude(),beansMain.getSnappedPoints().get(i).getLocation().getLongitude());
+            fourthRouteList.add(latLng);
         }
         startPosition4=fourthRouteList.get(0);
         marker4 = mMap.addMarker(new MarkerOptions().position(startPosition4)
-        .flat(true)
-        .icon(BitmapDescriptorFactory.fromResource(R.drawable.taxi)));
+                .flat(true)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.taxi)));
         marker4.setAnchor(0.5f, 0.5f);
-        }
 
-*/
-/**
- * Manipulates the map once available.
- * This callback is triggered when the map is ready to be used.
- * This is where we can add markers or lines, add listeners or move the camera. In this case,
- * we just add a marker near Sydney, Australia.
- * If Google Play services is not installed on the device, the user will be prompted to install
- * it inside the SupportMapFragment. This method will only be triggered once the user has
- * installed Google Play services and returned to the app.
- *//*
-
-@Override
-public void onMapReady(GoogleMap googleMap) {
-
-
-*/
+        animationStart();
+    }
+}
