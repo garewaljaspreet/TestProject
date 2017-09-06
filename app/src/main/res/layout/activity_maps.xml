@@ -18,7 +18,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:background="@drawable/client_pin_centered"/>
+        android:background="@drawable/icon_client_pin"/>
 
     <RelativeLayout
         android:id="@+id/rlSelect"
@@ -165,7 +165,7 @@
                 android:layout_centerVertical="true"
                 android:layout_marginStart="10dp"
                 android:maxLines="1"
-                android:layout_toLeftOf="@+id/btnPick"
+                android:layout_toLeftOf="@+id/rlPickStart"
                 android:layout_marginRight="10dp"
                 android:layout_toRightOf="@+id/imgPickUpSqare"
                 android:text="Current Location"
@@ -173,13 +173,22 @@
                 android:textSize="16sp"
                 android:textStyle="normal" />
 
-            <ImageView
-                android:id="@+id/btnPick"
+            <RelativeLayout
+                android:id="@+id/rlPickStart"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:paddingLeft="15dp"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:background="@drawable/btn_pickup" />
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/btnPick"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/btn_pickup" />
+                </RelativeLayout>
+
+
         </RelativeLayout>
 
         <RelativeLayout
@@ -205,21 +214,30 @@
                 android:layout_centerVertical="true"
                 android:layout_marginStart="10dp"
                 android:maxLines="1"
-                android:layout_toLeftOf="@+id/btnPickDest"
+                android:layout_toLeftOf="@+id/rlPickDest"
                 android:layout_marginRight="10dp"
                 android:layout_toRightOf="@+id/imgDestinationSqare"
-                android:text="Enter Destination"
+                android:text="Enter Dropoff"
                 android:textColor="#000000"
                 android:textSize="16sp"
                 android:textStyle="normal" />
 
-            <ImageView
-                android:id="@+id/btnPickDest"
-                android:layout_width="96dp"
-                android:layout_height="32dp"
+            <RelativeLayout
+                android:id="@+id/rlPickDest"
+                android:layout_width="wrap_content"
+                android:paddingLeft="15dp"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:background="@drawable/skip_button" />
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/btnPickDest"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/drop_off" />
+            </RelativeLayout>
+
+
         </RelativeLayout>
 
         <View
@@ -297,6 +315,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
+                    android:maxLines="1"
                     android:layout_marginStart="10dp"
                     android:text="Current Location"
                     android:textColor="#000000"
@@ -313,10 +332,11 @@
                 android:layout_marginRight="24dp">
 
                 <com.developers.uberanimation.CustomTextView
-                    android:id="@+id/txtLocationNamePopup"
+                    android:id="@+id/txtDestLocPopup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
+                    android:maxLines="1"
                     android:layout_marginStart="10dp"
                     android:text="Morgan Crossing"
                     android:textColor="#000000"
@@ -600,9 +620,12 @@
             android:layout_marginTop="14dp">
 
             <RatingBar
+                android:id="@+id/ratingBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
+                style="?android:attr/ratingBarStyle"
+                android:stepSize="1"
                 android:numStars="5" />
 
 
@@ -615,7 +638,7 @@
             android:layout_height="48dp"
             android:layout_below="@+id/rlRaitngStarLay"
             android:layout_marginBottom="24dp"
-            android:background="@drawable/rounded_border_green"
+            android:background="@drawable/rounded_border_blue"
             >
 
             <com.developers.uberanimation.CustomTextView

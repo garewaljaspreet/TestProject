@@ -9,6 +9,8 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.LayerDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -24,6 +26,7 @@ import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -70,6 +73,7 @@ import java.util.List;
 public class MapsActivity extends FragmentActivity implements View.OnClickListener,OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener{
 
     private static final String TAG = MapsActivity.class.getSimpleName();
+    String startAdd,endAdd;
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
     ImageView imgMenu,imgLoc;
@@ -77,8 +81,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     int APP_STATE=0;
     CustomTextView txtCurrentLocation,txtStateUpdate;
     ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
-    CustomTextView txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest;
-    RelativeLayout rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
+    CustomTextView txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest,txtCurrentLocPopup,txtDestLocPopup;
+    RelativeLayout rlPickDest,rlPickStart,rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
     RelativeLayout rlRatingSubmit,rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain,rlTop;
     private List<LatLng> polyLineList;
     BeansMessage beansMessage;
@@ -119,7 +123,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     int i=0,j=0,k=0,l=0,m=0;
     boolean isMarkerRotating=false;
     NetworkService service;
-
+    RatingBar ratingBar;
 
     /**
      * Service to connect with Pubnub
@@ -153,8 +157,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, mLocationCallback);
                 mGoogleApiClient.disconnect();
             }
-        if(mCurrentLoc!=null)
-            saveLastLoc(mCurrentLoc.getLatitude(),mCurrentLoc.getLongitude(),this);
+        /*if(mCurrentLoc!=null)
+            saveLastLoc(mCurrentLoc.getLatitude(),mCurrentLoc.getLongitude(),this);*/
         else {
             if(mLastLocation!=null)
                 saveLastLoc(mLastLocation.getLatitude(),mLastLocation.getLongitude(),this);
@@ -187,9 +191,12 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         imgCenterPin= (ImageView) findViewById(R.id.imgCenterPin);
         imgMenu= (ImageView) findViewById(R.id.imgMenu);
         imgLoc= (ImageView) findViewById(R.id.imgLoc);
+        imgLoc.setOnClickListener(this);
         btnPick= (ImageView) findViewById(R.id.btnPick);
         btnPickDest= (ImageView) findViewById(R.id.btnPickDest);
         rlRatingSubmit= (RelativeLayout) findViewById(R.id.rlRatingSubmit);
+        rlPickDest= (RelativeLayout) findViewById(R.id.rlPickDest);
+        rlPickStart= (RelativeLayout) findViewById(R.id.rlPickStart);
         rlRatingSubmit.setOnClickListener(this);
         rlSelect= (RelativeLayout) findViewById(R.id.rlSelect);
         rlSelectMain= (RelativeLayout) findViewById(R.id.rlSelectMain);
@@ -210,10 +217,14 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         imgMyCar=(ImageView)findViewById(R.id.imgMyCar);
         imgRideShare=(ImageView)findViewById(R.id.imgRideshare);
         imgPartition=(ImageView)findViewById(R.id.imgPartition);
+        ratingBar=(RatingBar) findViewById(R.id.ratingBar);
         rlPriceInfo=(RelativeLayout)findViewById(R.id.rlpriceInfo);
         txtPrice=(CustomTextView)findViewById(R.id.txtPrice);
         txtRequestRide=(CustomTextView)findViewById(R.id.txtRequestRide);
         txtLocDest=(CustomTextView)findViewById(R.id.txtLocDest);
+        txtLocDest.setOnClickListener(this);
+        txtDestLocPopup=(CustomTextView)findViewById(R.id.txtDestLocPopup);
+        txtCurrentLocPopup=(CustomTextView)findViewById(R.id.txtCurrentLocPopup);
         txtTaxi=(CustomTextView)findViewById(R.id.txtTaxi);
         txtTimeTaxi=(CustomTextView)findViewById(R.id.txtTimeTaxi);
         txtRideShare=(CustomTextView)findViewById(R.id.txtRideShare);
@@ -234,33 +245,48 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         txtRequestRide.setText("Request Taxi");
         txtTaxi.setTextColor(Color.parseColor("#272727"));
         txtTimeTaxi.setTextColor(Color.parseColor("#272727"));
+
+        LayerDrawable stars = (LayerDrawable) ratingBar.getProgressDrawable();
+        stars.getDrawable(2).setColorFilter(Color.parseColor("#0077A6"), PorterDuff.Mode.SRC_ATOP);
+        stars.getDrawable(0).setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_ATOP);
+
+        ratingBar.setRating(Float.parseFloat("5.0"));
         mapFragment.getMapAsync(MapsActivity.this);
 
-        btnPick.setOnClickListener(new View.OnClickListener() {
+        rlPickStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(IsStartSet) {
+                    initView();
+                    btnPick.setBackgroundResource(R.drawable.btn_pickup);
+                }
+                else
+                {
+                    subscribePubnub();
+                    txtCurrentLocPopup.setText(startAdd);
+                    btnPick.setBackgroundResource(R.drawable.close_icon);
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
+                            .flat(true)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_client_pin_spc)));
+                    imgCenterPin.setBackgroundResource(R.drawable.icon_destination_flag);
+                    rlDestLoc.setVisibility(View.VISIBLE);
+                    IsStartSet=true;
+                }
 
-                subscribePubnub();
-                btnPick.setBackgroundResource(R.drawable.close_icon);
-                mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
-                        .flat(true)
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
-                imgCenterPin.setBackgroundResource(R.drawable.destination_flag);
-                rlDestLoc.setVisibility(View.VISIBLE);
-                IsStartSet=true;
             }
         });
-        btnPickDest.setOnClickListener(new View.OnClickListener() {
+        rlPickDest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                /* Intent intent=new Intent(MapsActivity.this,FindAddress.class);
                 startActivityForResult(intent,1);*/
+                txtDestLocPopup.setText(endAdd);
                 mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
                         .flat(true)
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
                 imgCenterPin.setVisibility(View.GONE);
                 IsEndSet=true;
-                showPolyAnim(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
+                setPolyInfo(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
                 rlSelect.setVisibility(View.GONE);
                 rlSelectMain.setVisibility(View.GONE);
                 rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
@@ -359,10 +385,10 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
             mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
                     .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_client_pin_spc)));
              mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
                     .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
             setPolyInfo(beansMessage.getDrivarLat(),beansMessage.getDriverLng(),startPostion.latitude,startPostion.longitude);
 
 
@@ -381,12 +407,9 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getDrivarLat(),beansMessage.getDriverLng()))
                     .flat(true)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
-            mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
-                    .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
             mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
                     .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
             setPolyInfo(beansMessage.getDrivarLat(),beansMessage.getDriverLng(),startPostion.latitude,startPostion.longitude);
         }
         else if(state==5)
@@ -399,7 +422,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             mMap.clear();
             mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
                     .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_client_pin_spc)));
         }
 
     }
@@ -463,7 +486,13 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 startActivityForResult(intent,1);
                 break;
 
+            case R.id.txtLocDest:
+                Intent intent1=new Intent(MapsActivity.this,FindAddress.class);
+                startActivityForResult(intent1,1);
+                break;
+
             case R.id.txtClose:
+                btnPick.setBackgroundResource(R.drawable.btn_pickup);
                initView();
 
             case R.id.imgLoc:
@@ -543,7 +572,16 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlSelectMain.setVisibility(View.VISIBLE);
         mMap.clear();
         imgCenterPin.setVisibility(View.VISIBLE);
-        imgCenterPin.setBackgroundResource(R.drawable.client_pin_centered);
+        imgCenterPin.setBackgroundResource(R.drawable.icon_client_pin);
+        CameraPosition position = CameraPosition.builder()
+                .target( new LatLng( mCurrentLoc.getLatitude(),
+                        mCurrentLoc.getLongitude()))
+                .zoom(zoomLevel)
+                .bearing( 0.0f )
+                .tilt(0.0f )
+                .build();
+        mMap.animateCamera(CameraUpdateFactory
+                .newCameraPosition(position), null);
         rlDestLoc.setVisibility(View.GONE);
         IsStartSet=false;
         IsEndSet=false;
@@ -632,30 +670,34 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             rlSelect.setVisibility(View.GONE);
             rlSelectMain.setVisibility(View.GONE);
             rlProgress.setVisibility(View.VISIBLE);
+            imgCenterPin.setVisibility(View.GONE);
             rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
             beansAPNS=data.getParcelableExtra("addressInfo");
+            startAdd=beansAPNS.getStrStartAdd();
+            endAdd=beansAPNS.getStrEndAdd();
+            txtCurrentLocPopup.setText(startAdd);
+            txtDestLocPopup.setText(endAdd);
             Log.e("STRATRT",beansAPNS.getStartLatitude()+"   "+beansAPNS.getStartLongitude());
             Marker markerStart = mMap.addMarker(new MarkerOptions().position(new LatLng(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude()))
                     .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_client_pin_spc)));
             Marker markerend = mMap.addMarker(new MarkerOptions().position(new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude()))
                     .flat(true)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
             startPostion=new LatLng(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude());
             endPosition=new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
             setPolyInfo(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude(),beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
-            showPolyAnim(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude(),beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
         }
 
     }
 
-    private void setPolyInfo(double polyStartLat,double polyStartLng,double polyEndLat,double polyEndLng)
+    private void setPolyInfo(double polyStartLatitude,double polyStartLong,double polyEndLatitude,double polyEndLong)
     {
-        this.polyStartLat=polyStartLat;
-        this.polyStartLng=polyStartLng;
-        this.polyEndLat=polyEndLat;
-        this.polyEndLng=polyEndLng;
-        showPolyAnim(polyStartLat,polyStartLng,polyEndLat,polyStartLng);
+        this.polyStartLat=polyStartLatitude;
+        this.polyStartLng=polyStartLong;
+        this.polyEndLat=polyEndLatitude;
+        this.polyEndLng=polyEndLong;
+        showPolyAnim(polyStartLat,polyStartLng,polyEndLat,polyEndLng);
     }
 
     private void showPolyAnim(double startLat,double startLong,double endLat,double endLng)
@@ -676,16 +718,31 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
     private void startAnim(ArrayList<LatLng> routelist){
         if(mMap != null) {
+            moveToBounds(routelist);
             MapAnimator.getInstance().animateRoute(mMap, routelist);
         } else {
             Toast.makeText(getApplicationContext(), "Map not ready", Toast.LENGTH_LONG).show();
         }
     }
 
+    private void moveToBounds(ArrayList<LatLng> routelist)
+    {
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for(int i = 0; i < routelist.size();i++){
+            builder.include(routelist.get(i));
+        }
+        LatLngBounds bounds = builder.build();
+        int padding = 150; // offset from edges of the map in pixels
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+        mMap.animateCamera(cu);
+    }
+
     protected void onDirectionResult(DirectionResults directionResults)
     {
+        service.changeApiBaseUrl("https://roads.googleapis.com");
         ArrayList<LatLng> routelist = new ArrayList<LatLng>();
-        routelist.add(new LatLng(polyStartLat,polyEndLng));
+       // routelist.add(new LatLng(polyStartLat,polyStartLng));
         if(directionResults.getRoutes().size()>0){
             List<LatLng> decodelist;
             Route routeA = directionResults.getRoutes().get(0);
@@ -711,7 +768,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             }
         }
 
-        routelist.add(new LatLng(polyEndLat,polyEndLng));
+      //  routelist.add(new LatLng(polyEndLat,polyEndLng));
         startAnim(routelist);
     }
 
@@ -945,11 +1002,12 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             addressObj=resultData.getParcelable("addressText");
             if(addressObj!=null)
             {
-                for (int i=0;i<3;i++)
+               /* for (int i=0;i<3;i++)
                 {
                     if(addressObj.getAddressLine(i)!=null)
                         addressText=addressText+addressObj.getAddressLine(i)+"\n";
-                }
+                }*/
+               addressText=addressObj.getFeatureName()+", "+addressObj.getThoroughfare()+", "+addressObj.getLocality();
                 showMapData();
             }
 
@@ -967,11 +1025,18 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     private void showMapData()
     {
         try {
-            Log.e("Add",addressText);
+            Log.e("Add",addressText+"   "+IsStartSet);
             if(!IsStartSet)
-            txtCurrentLocation.setText(addressText);
+            {
+                startAdd=addressText;
+                txtCurrentLocation.setText(addressText);
+            }
             else
+            {
+                endAdd=addressText;
                 txtLocDest.setText(addressText);
+            }
+
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             mMap.getUiSettings().setMapToolbarEnabled(false);
             mMap.setMyLocationEnabled(true);

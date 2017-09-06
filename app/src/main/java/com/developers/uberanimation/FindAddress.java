@@ -40,7 +40,7 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
     RecyclerView recyclerView;
     EditText edCurrent,edDest;
     RelativeLayout rlPick,rlPickDest;
-    TextView txtSkip;
+    TextView txtSkip,txtCancel;
     GoogleApiClient mGoogleApiClient;
     Place startAdd,endAdd;
     boolean IS_Start=false;
@@ -54,6 +54,8 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
         edCurrent=(EditText) findViewById(R.id.edCurrent);
         edDest=(EditText) findViewById(R.id.edDest);
         txtSkip=(TextView) findViewById(R.id.txtSkip);
+        txtCancel=(TextView) findViewById(R.id.txtCancel);
+        txtCancel.setOnClickListener(this);
         rlPick=(RelativeLayout) findViewById(R.id.rlPick);
         rlPickDest=(RelativeLayout) findViewById(R.id.rlPickDest);
         rlPick.setOnClickListener(this);
@@ -306,6 +308,10 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
 
             case R.id.rlPickDest:
                 edDest.setText("");
+                break;
+
+            case R.id.txtCancel:
+                finish();
                 break;
         }
     }

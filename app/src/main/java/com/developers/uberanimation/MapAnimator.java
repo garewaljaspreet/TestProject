@@ -72,10 +72,10 @@ public class MapAnimator {
         if (backgroundPolyline != null) backgroundPolyline.remove();
 
 
-        PolylineOptions optionsBackground = new PolylineOptions().add(bangaloreRoute.get(0)).color(GREY).width(5);
+        PolylineOptions optionsBackground = new PolylineOptions().add(bangaloreRoute.get(0)).color(GREY).width(10);
         backgroundPolyline = googleMap.addPolyline(optionsBackground);
 
-        optionsForeground = new PolylineOptions().add(bangaloreRoute.get(0)).color(Color.BLACK).width(5);
+        optionsForeground = new PolylineOptions().add(bangaloreRoute.get(0)).color(Color.BLACK).width(10);
         foregroundPolyline = googleMap.addPolyline(optionsForeground);
 
         final ValueAnimator percentageCompletion = ValueAnimator.ofInt(0, 100);
