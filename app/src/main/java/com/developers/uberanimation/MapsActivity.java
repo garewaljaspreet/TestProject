@@ -16,14 +16,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ResultReceiver;
-import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -82,7 +79,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
     CustomTextView txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest;
     RelativeLayout rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
-    RelativeLayout rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain,rlTop;
+    RelativeLayout rlRatingSubmit,rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain,rlTop;
     private List<LatLng> polyLineList;
     BeansMessage beansMessage;
     private Marker marker1,marker2,marker3,marker4,marker5;
@@ -97,7 +94,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     private float v;
     private ChatterBoxClient chatterBoxServiceClient;       //To access service methods
     BeansAPNS beansAPNS;
-    private double lat, lng;
+    private double polyStartLat, polyStartLng,polyEndLat,polyEndLng;
     LatLng startPostion,endPosition;
     LatLng startLat,startLng,endLat,endLng;
     boolean IsStartSet=false,IsEndSet=false;
@@ -192,6 +189,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         imgLoc= (ImageView) findViewById(R.id.imgLoc);
         btnPick= (ImageView) findViewById(R.id.btnPick);
         btnPickDest= (ImageView) findViewById(R.id.btnPickDest);
+        rlRatingSubmit= (RelativeLayout) findViewById(R.id.rlRatingSubmit);
+        rlRatingSubmit.setOnClickListener(this);
         rlSelect= (RelativeLayout) findViewById(R.id.rlSelect);
         rlSelectMain= (RelativeLayout) findViewById(R.id.rlSelectMain);
         rlRating= (RelativeLayout) findViewById(R.id.rlRating);
@@ -268,138 +267,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             }
         });
 
-      /*  String requestUrl = null;
-        try {
-            requestUrl = "https://maps.googleapis.com/maps/api/directions/json?" +
-                    "mode=driving&"
-                    + "transit_routing_preference=less_driving&"
-                    + "origin=" + latitude + "," + longitude + "&"
-                    + "destination=" + destination + "&"
-                    + "key=" + "AIzaSyDIaU9M7cN8z7LG2zJjWmfPWebtSClJSRQ";
-            Log.d(TAG, requestUrl);
-            JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET,
-                    requestUrl, null,
-                    new Response.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) {
-                            Log.d(TAG, response + "");
-                            try {
-                                JSONArray jsonArray = response.getJSONArray("routes");
-                                for (int i = 0; i < jsonArray.length(); i++) {
-                                    JSONObject route = jsonArray.getJSONObject(i);
-                                    JSONObject poly = route.getJSONObject("overview_polyline");
-                                    String polyline = poly.getString("points");
-                                    polyLineList = decodePoly(polyline);
-                                    Log.d(TAG, polyLineList + "");
-                                }
-                                //Adjusting bounds
-                                LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                                for (LatLng latLng : polyLineList) {
-                                    builder.include(latLng);
-                                }
-                                LatLngBounds bounds = builder.build();
-                                CameraUpdate mCameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 2);
-                                mMap.animateCamera(mCameraUpdate);
 
-                                polylineOptions = new PolylineOptions();
-                                polylineOptions.color(Color.GRAY);
-                                polylineOptions.width(5);
-                                polylineOptions.startCap(new SquareCap());
-                                polylineOptions.endCap(new SquareCap());
-                                polylineOptions.jointType(ROUND);
-                                polylineOptions.addAll(polyLineList);
-                                greyPolyLine = mMap.addPolyline(polylineOptions);
-
-                                blackPolylineOptions = new PolylineOptions();
-                                blackPolylineOptions.width(5);
-                                blackPolylineOptions.color(Color.BLACK);
-                                blackPolylineOptions.startCap(new SquareCap());
-                                blackPolylineOptions.endCap(new SquareCap());
-                                blackPolylineOptions.jointType(ROUND);
-                                blackPolyline = mMap.addPolyline(blackPolylineOptions);
-
-                                mMap.addMarker(new MarkerOptions()
-                                        .position(polyLineList.get(polyLineList.size() - 1)).flat(true));
-
-                                ValueAnimator polylineAnimator = ValueAnimator.ofInt(0, 100);
-                                polylineAnimator.setDuration(2000);
-                                polylineAnimator.setInterpolator(new LinearInterpolator());
-                                polylineAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                                    @Override
-                                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                                        List<LatLng> points = greyPolyLine.getPoints();
-                                        int percentValue = (int) valueAnimator.getAnimatedValue();
-                                        int size = points.size();
-                                        int newPoints = (int) (size * (percentValue / 100.0f));
-                                        List<LatLng> p = points.subList(0, newPoints);
-                                        blackPolyline.setPoints(p);
-                                    }
-                                });
-                                polylineAnimator.start();
-                                marker = mMap.addMarker(new MarkerOptions().position(sydney)
-                                        .flat(true)
-                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car)));
-                                handler = new Handler();
-                                index = -1;
-                                next = 1;
-                                handler.postDelayed(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (index < polyLineList.size() - 1) {
-                                            index++;
-                                            next = index + 1;
-                                        }
-                                        if (index < polyLineList.size() - 1) {
-                                            startPosition = polyLineList.get(index);
-                                            endPosition = polyLineList.get(next);
-                                        }
-                                        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1);
-                                        valueAnimator.setDuration(3000);
-                                        valueAnimator.setInterpolator(new LinearInterpolator());
-                                        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                                            @Override
-                                            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                                                v = valueAnimator.getAnimatedFraction();
-                                                lng = v * endPosition.longitude + (1 - v)
-                                                        * startPosition.longitude;
-                                                lat = v * endPosition.latitude + (1 - v)
-                                                        * startPosition.latitude;
-                                                LatLng newPos = new LatLng(lat, lng);
-                                                marker.setPosition(newPos);
-                                                marker.setAnchor(0.5f, 0.5f);
-                                                //marker.setRotation(getBearing(startPosition, newPos));
-                                                rotateMarker(marker,Float.parseFloat(String.valueOf(getBearing(startPosition, newPos))));
-                                                marker.setPosition(newPos);
-                                                *//*mMap.moveCamera(CameraUpdateFactory
-                                                        .newCameraPosition
-                                                                (new CameraPosition.Builder()
-                                                                        .target(newPos)
-                                                                        .zoom(15.5f)
-                                                                        .build()));*//*
-                                            }
-                                        });
-                                        valueAnimator.start();
-                                        handler.postDelayed(this, 3000);
-                                    }
-                                }, 3000);
-
-
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    Log.d(TAG, error + "");
-                }
-            });
-            RequestQueue requestQueue = Volley.newRequestQueue(this);
-            requestQueue.add(jsonObjectRequest);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
 
     }
 
@@ -434,7 +302,6 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         public void onMessage(BeansMessage message) {
             super.onMessage(message);
 
-            Log.e("Message","AYA"+message.getLat());
             if(message.getMessage().equals("DriverFound"))
             {
 
@@ -487,7 +354,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             imgLoc.setVisibility(View.GONE);
             rlProgress.setVisibility(View.GONE);
             mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getLat(),beansMessage.getLng()))
+            mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getDrivarLat(),beansMessage.getDriverLng()))
                     .flat(true)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
             mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
@@ -496,8 +363,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
              mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
                     .flat(true)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
-            Log.e("FILTER2",beansMessage.getLat()+"  "+endPosition.latitude);
-            showPolyAnim(beansMessage.getLat(),beansMessage.getLng(),startPostion.latitude,startPostion.longitude);
+            setPolyInfo(beansMessage.getDrivarLat(),beansMessage.getDriverLng(),startPostion.latitude,startPostion.longitude);
+
 
         }
         else if(state==4)
@@ -511,7 +378,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             imgLoc.setVisibility(View.GONE);
             rlProgress.setVisibility(View.GONE);
             mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getLat(),beansMessage.getLng()))
+            mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getDrivarLat(),beansMessage.getDriverLng()))
                     .flat(true)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
             mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
@@ -520,8 +387,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
                     .flat(true)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
-            Log.e("FILTER2",beansMessage.getLat()+"  "+endPosition.latitude);
-            showPolyAnim(beansMessage.getLat(),beansMessage.getLng(),startPostion.latitude,startPostion.longitude);
+            setPolyInfo(beansMessage.getDrivarLat(),beansMessage.getDriverLng(),startPostion.latitude,startPostion.longitude);
         }
         else if(state==5)
         {
@@ -623,8 +489,10 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                     rlMainRequestTaxiLay.setVisibility(View.GONE);
                     rlProgress.setVisibility(View.VISIBLE);
                     BeansMessage beansMessage=new BeansMessage();
-                    beansMessage.setLat(startPostion.latitude);
-                    beansMessage.setLng(startPostion.longitude);
+                    beansMessage.setUserStartLat(startPostion.latitude);
+                    beansMessage.setUserStartLng(startPostion.longitude);
+                    beansMessage.setUserDestLat(endPosition.latitude);
+                    beansMessage.setUserDestLng(endPosition.longitude);
                     beansMessage.setMessage("FindDriver");
                     beansMessage.setType("Customer");
                     chatterBoxServiceClient.publishHybrid("",beansMessage);
@@ -636,8 +504,10 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 if(APP_STATE==2)
                 {
                     BeansMessage beansMessage=new BeansMessage();
-                    beansMessage.setLat(endPosition.latitude);
-                    beansMessage.setLng(endPosition.longitude);
+                    beansMessage.setUserStartLat(startPostion.latitude);
+                    beansMessage.setUserStartLng(startPostion.longitude);
+                    beansMessage.setUserDestLat(endPosition.latitude);
+                    beansMessage.setUserDestLng(endPosition.longitude);
                     beansMessage.setMessage("StartTrip");
                     beansMessage.setType("Customer");
                     chatterBoxServiceClient.publishHybrid("",beansMessage);
@@ -645,12 +515,25 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 else if(APP_STATE==4)
                 {
                     BeansMessage beansMessage=new BeansMessage();
-                    beansMessage.setLat(endPosition.latitude);
-                    beansMessage.setLng(endPosition.longitude);
+                    beansMessage.setUserStartLat(startPostion.latitude);
+                    beansMessage.setUserStartLng(startPostion.longitude);
+                    beansMessage.setUserDestLat(endPosition.latitude);
+                    beansMessage.setUserDestLng(endPosition.longitude);
                     beansMessage.setMessage("CompleteTrip");
                     beansMessage.setType("Customer");
                     chatterBoxServiceClient.publishHybrid("",beansMessage);
                 }
+
+                break;
+            case R.id.rlRatingSubmit:
+                rlDriverFound.setVisibility(View.GONE);
+                rlMainRequestTaxiLay.setVisibility(View.GONE);
+                imgLoc.setVisibility(View.VISIBLE);
+                rlProgress.setVisibility(View.GONE);
+                imgCenterPin.setVisibility(View.VISIBLE);
+                initView();
+                break;
+
         }
     }
 
@@ -667,52 +550,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlProgress.setVisibility(View.GONE);
         animationStart();
     }
-    /*private float getBearing(LatLng begin, LatLng end) {
-        double lat = Math.abs(begin.latitude - end.latitude);
-        double lng = Math.abs(begin.longitude - end.longitude);
 
-        if (begin.latitude < end.latitude && begin.longitude < end.longitude)
-            return (float) (Math.toDegrees(Math.atan(lng / lat)));
-        else if (begin.latitude >= end.latitude && begin.longitude < end.longitude)
-            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
-        else if (begin.latitude >= end.latitude && begin.longitude >= end.longitude)
-            return (float) (Math.toDegrees(Math.atan(lng / lat)) + 180);
-        else if (begin.latitude < end.latitude && begin.longitude >= end.longitude)
-            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
-        return -1;
-    }
-*/
-
-    private void rotateMarker(final Marker marker, final float toRotation) {
-        if(!isMarkerRotating) {
-            final Handler handler = new Handler();
-            final long start = SystemClock.uptimeMillis();
-            final float startRotation = marker.getRotation();
-            final long duration = 1000;
-
-            final Interpolator interpolator = new LinearInterpolator();
-
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    isMarkerRotating = true;
-
-                    long elapsed = SystemClock.uptimeMillis() - start;
-                    float t = interpolator.getInterpolation((float) elapsed / duration);
-
-                    float rot = t * toRotation + (1 - t) * startRotation;
-
-                    marker.setRotation(-rot > 180 ? rot / 2 : rot);
-                    if (t < 1.0) {
-                        // Post again 16ms later.
-                        handler.postDelayed(this, 16);
-                    } else {
-                        isMarkerRotating = false;
-                    }
-                }
-            });
-        }
-    }
 
     private double getBearing(LatLng latLng1,LatLng latLng2) {
 
@@ -736,37 +574,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         return brng;
     }
 
-    static void animateUserMarkerToGB(final Marker marker, final LatLng finalPosition) {
-        final LatLng startPosition = marker.getPosition();
-        final Handler handler = new Handler();
-        final long start = SystemClock.uptimeMillis();
 
-        final Interpolator interpolator = new AccelerateDecelerateInterpolator();
-        final float durationInMs = 2500;
-
-        handler.post(new Runnable() {
-            long elapsed;
-            float t;
-            float v;
-
-            @Override
-            public void run() {
-                // Calculate progress using interpolator
-                elapsed = SystemClock.uptimeMillis() - start;
-                t = elapsed / durationInMs;
-                v = interpolator.getInterpolation(t);
-                marker.setPosition(new LatLngInterpolator.Spherical().interpolate(v, startPosition, finalPosition));
-                //rotateMarker(marker,Float.parseFloat(String.valueOf(getBearing(startPosition, finalPosition))),v,startPosition,finalPosition);
-                // Repeat till progress is complete.
-                if (t < 1) {
-                    // Post again 16ms later.
-                    handler.postDelayed(this, 16);
-                } else {
-                    // fragment.IS_USER_ANIM=false;
-                }
-            }
-        });
-    }
 
     private void rotateMarker(final Marker marker, final LatLng destination, final float rotation) {
 
@@ -835,9 +643,19 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
             startPostion=new LatLng(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude());
             endPosition=new LatLng(beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
+            setPolyInfo(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude(),beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
             showPolyAnim(beansAPNS.getStartLatitude(),beansAPNS.getStartLongitude(),beansAPNS.getEndLatitude(),beansAPNS.getEndLongitude());
         }
 
+    }
+
+    private void setPolyInfo(double polyStartLat,double polyStartLng,double polyEndLat,double polyEndLng)
+    {
+        this.polyStartLat=polyStartLat;
+        this.polyStartLng=polyStartLng;
+        this.polyEndLat=polyEndLat;
+        this.polyEndLng=polyEndLng;
+        showPolyAnim(polyStartLat,polyStartLng,polyEndLat,polyStartLng);
     }
 
     private void showPolyAnim(double startLat,double startLong,double endLat,double endLng)
@@ -867,7 +685,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     protected void onDirectionResult(DirectionResults directionResults)
     {
         ArrayList<LatLng> routelist = new ArrayList<LatLng>();
-        routelist.add(startPostion);
+        routelist.add(new LatLng(polyStartLat,polyEndLng));
         if(directionResults.getRoutes().size()>0){
             List<LatLng> decodelist;
             Route routeA = directionResults.getRoutes().get(0);
@@ -893,7 +711,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             }
         }
 
-        routelist.add(endPosition);
+        routelist.add(new LatLng(polyEndLat,polyEndLng));
         startAnim(routelist);
     }
 
@@ -1084,19 +902,23 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
             @Override
             public void onCameraChange(CameraPosition arg0) {
-                if (IS_ADDRESS_SEARCHED == false)
-                    if(!IsStartSet)
-                    {
-                        startPostion=arg0.target;
+                if(APP_STATE==0)
+                {
+                    if (IS_ADDRESS_SEARCHED == false)
+                        if(!IsStartSet)
+                        {
+                            startPostion=arg0.target;
 
-                    }
-                    else if(!IsEndSet)
-                    {
-                        endPosition=arg0.target;
-                    }
-                startIntentService(arg0.target, null);
+                        }
+                        else if(!IsEndSet)
+                        {
+                            endPosition=arg0.target;
+                        }
+                    startIntentService(arg0.target, null);
 
-                IS_ADDRESS_SEARCHED = false;
+                    IS_ADDRESS_SEARCHED = false;
+                }
+
             }
         });
     }
