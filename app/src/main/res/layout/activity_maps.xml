@@ -84,7 +84,16 @@
         android:layout_marginRight="15dp"
         android:layout_alignParentBottom="true">
 
+        <com.developers.uberanimation.CustomTextView
+            android:id="@+id/txtFindDriver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Finding Your Driver"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="10dp"/>
+
         <ProgressBar
+            android:layout_below="@+id/txtFindDriver"
             android:theme="@style/LinearProgress"
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="match_parent"
@@ -106,8 +115,18 @@
             android:layout_alignParentLeft="true"
             android:layout_width="wrap_content"
             android:layout_centerVertical="true"
-            android:src="@drawable/hamburger_menu"
+            android:visibility="gone"
             android:layout_height="wrap_content" />
+
+        <com.developers.uberanimation.CustomTextView
+            android:id="@+id/txtStateUpdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true"
+            android:text="Driver En Route"
+            android:textSize="18sp"
+            android:textColor="#ffffff"/>
 
         <ImageView
             android:id="@+id/imgLoc"
@@ -156,8 +175,8 @@
 
             <ImageView
                 android:id="@+id/btnPick"
-                android:layout_width="96dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:background="@drawable/btn_pickup" />
@@ -241,11 +260,12 @@
             android:layout_marginRight="24dp">
 
             <RelativeLayout
-                android:layout_width="2dp"
+                android:id="@+id/rlView"
+                android:layout_width="wrap_content"
                 android:layout_height="48dp"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="2dp"
-                android:background="@drawable/trip_connector"
+                android:background="@drawable/square_connector"
                 android:visibility="visible"
 
                 >
@@ -267,6 +287,7 @@
 
             <RelativeLayout
                 android:id="@+id/rlCurrentLocPopup"
+                android:layout_toRightOf="@+id/rlView"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginRight="24dp">
@@ -287,6 +308,7 @@
                 android:id="@+id/rlLocationName"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
+                android:layout_toRightOf="@+id/rlView"
                 android:layout_below="@+id/rlCurrentLocPopup"
                 android:layout_marginRight="24dp">
 
@@ -479,5 +501,124 @@
                 android:textSize="18sp" />
 
         </RelativeLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rlDriverFound"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/selector"
+        android:visibility="gone"
+        android:paddingRight="24dp"
+        android:paddingLeft="24dp"
+        android:layout_alignParentBottom="true">
+        <ImageView
+            android:id="@+id/img_driverDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/details_driver"/>
+
+        <View
+            android:id="@+id/viewGrey"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_below="@+id/img_driverDetails"
+            android:layout_marginTop="14dp"
+            android:background="#EAEAEA"></View>
+
+        <RelativeLayout
+            android:id="@+id/rlButtonMain"
+            android:layout_marginBottom="14dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginRight="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/viewGrey">
+
+            <ImageView
+                android:id="@+id/imgText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_alignParentLeft="true"
+                android:src="@drawable/text_button" />
+
+            <ImageView
+                android:id="@+id/imgCall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_centerInParent="true"
+                android:background="@drawable/call_button" />
+
+            <ImageView
+                android:id="@+id/imgCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_alignParentRight="true"
+                android:background="@drawable/cancel_btn" />
+
+
+
+        </RelativeLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rlRating"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/selector"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp">
+
+        <ImageView
+            android:id="@+id/img_driverDetailsRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/details_client_rate"
+            />
+
+        <View
+            android:id="@+id/viewGreyRating"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_below="@+id/img_driverDetailsRating"
+            android:layout_marginTop="14dp"
+            android:background="#eaeaea"></View>
+
+        <RelativeLayout
+            android:id="@+id/rlRaitngStarLay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/viewGreyRating"
+            android:layout_marginBottom="14dp"
+            android:layout_marginTop="14dp">
+
+            <RatingBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:numStars="5" />
+
+
+
+        </RelativeLayout>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_below="@+id/rlRaitngStarLay"
+            android:layout_marginBottom="24dp"
+            android:background="#eaeaea"
+            android:text="Submit Rating"
+            android:textColor="#5d5d5d">
+
+
+        </Button>
     </RelativeLayout>
 </RelativeLayout>

@@ -30,6 +30,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.developers.uberanimation.event.Events;
+import com.developers.uberanimation.event.GlobalBus;
 import com.developers.uberanimation.models.BeansPickAddress;
 import com.developers.uberanimation.models.DirectionResults;
 import com.developers.uberanimation.models.Route;
@@ -61,6 +63,9 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,13 +75,16 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     private static final String TAG = MapsActivity.class.getSimpleName();
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
+    ImageView imgMenu,imgLoc;
     private Button btnFrom,btnTo;
-    CustomTextView txtCurrentLocation;
+    int APP_STATE=0;
+    CustomTextView txtCurrentLocation,txtStateUpdate;
     ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
     CustomTextView txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest;
-    RelativeLayout rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay;
-    RelativeLayout rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain;
+    RelativeLayout rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
+    RelativeLayout rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain,rlTop;
     private List<LatLng> polyLineList;
+    BeansMessage beansMessage;
     private Marker marker1,marker2,marker3,marker4,marker5;
     boolean IS_ADDRESS_SEARCHED=false;// check is address search is in process or not to avoid multiple calls
     String addressText;
@@ -135,6 +143,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
     @Override
     protected void onDestroy() {
+        GlobalBus.getBus().unregister(this);
         unbindService(serviceConnection);
         super.onDestroy();
     }
@@ -160,6 +169,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        GlobalBus.getBus().register(this);
         Intent intent = new Intent(this, ChatterBoxService.class); //Bind service for Pubnub
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
 
@@ -178,13 +188,21 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         polyLineList = new ArrayList<>();
         btnFrom= (Button) findViewById(R.id.btnFrom);
         imgCenterPin= (ImageView) findViewById(R.id.imgCenterPin);
+        imgMenu= (ImageView) findViewById(R.id.imgMenu);
+        imgLoc= (ImageView) findViewById(R.id.imgLoc);
         btnPick= (ImageView) findViewById(R.id.btnPick);
         btnPickDest= (ImageView) findViewById(R.id.btnPickDest);
         rlSelect= (RelativeLayout) findViewById(R.id.rlSelect);
         rlSelectMain= (RelativeLayout) findViewById(R.id.rlSelectMain);
+        rlRating= (RelativeLayout) findViewById(R.id.rlRating);
         rlProgress= (RelativeLayout) findViewById(R.id.rlProgress);
         rlCurrentLocation= (RelativeLayout) findViewById(R.id.rlCurrentLocation);
+        rlDriverFound= (RelativeLayout) findViewById(R.id.rlDriverFound);
+        rlButtonMain= (RelativeLayout) findViewById(R.id.rlButtonMain);
+        rlTop= (RelativeLayout) findViewById(R.id.rlTop);
+        rlTop.setOnClickListener(this);
         txtCurrentLocation= (CustomTextView) findViewById(R.id.txtCurrentLocation);
+        txtStateUpdate= (CustomTextView) findViewById(R.id.txtStateUpdate);
         rlDestLoc= (RelativeLayout) findViewById(R.id.rlDestLoc);
         btnTo= (Button) findViewById(R.id.btnTo);
         rlMainRequestTaxiLay=(RelativeLayout)findViewById(R.id.rlMainRequestTaxiLay);
@@ -212,6 +230,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         imgRideShare.setOnClickListener(this);
         rlMainRequestTaxiLay.setOnClickListener(this);
         txtCurrentLocation.setOnClickListener(this);
+        rlPriceInfo.setOnClickListener(this);
         txtPrice.setText("$6.00");
         txtRequestRide.setText("Request Taxi");
         txtTaxi.setTextColor(Color.parseColor("#272727"));
@@ -223,6 +242,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             public void onClick(View v) {
 
                 subscribePubnub();
+                btnPick.setBackgroundResource(R.drawable.close_icon);
                 mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
                         .flat(true)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
@@ -244,7 +264,6 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 showPolyAnim(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
                 rlSelect.setVisibility(View.GONE);
                 rlSelectMain.setVisibility(View.GONE);
-                rlProgress.setVisibility(View.VISIBLE);
                 rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
             }
         });
@@ -388,7 +407,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     {
         if(chatterBoxServiceClient!=null)
         {
-            chatterBoxServiceClient.subscribeChat("TestChat");
+            chatterBoxServiceClient.subscribeChat("TestChatNew");
         }
 
     }
@@ -415,10 +434,110 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         public void onMessage(BeansMessage message) {
             super.onMessage(message);
 
-            Log.e("Message","AYA"+message.getMessage());
+            Log.e("Message","AYA"+message.getLat());
+            if(message.getMessage().equals("DriverFound"))
+            {
 
+                GlobalBus.getBus().post(new Events("DriverFound",message,null));
+
+            }
+            else if(message.getMessage().equals("TripStarted"))
+            {
+                GlobalBus.getBus().post(new Events("TripStarted",message,null));
+            }
+            else if(message.getMessage().equals("TripCompleted"))
+            {
+                GlobalBus.getBus().post(new Events("TripCompleted",message,null));
+            }
         }
     };
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(Events eventInfo) {
+        if(eventInfo.getEventType().equals("DriverFound"))
+        {
+            beansMessage=eventInfo.getMessage();
+            APP_STATE=2;
+            changeViewState(2);
+        }
+        else if(eventInfo.getEventType().equals("TripStarted"))
+        {
+            beansMessage=eventInfo.getMessage();
+            APP_STATE=4;
+            changeViewState(4);
+        }
+        else if(eventInfo.getEventType().equals("TripCompleted"))
+        {
+            beansMessage=eventInfo.getMessage();
+            APP_STATE=5;
+            changeViewState(5);
+        }
+
+    }
+
+    private void changeViewState(int state)
+    {
+        if(state==2)
+        {
+            rlDriverFound.setVisibility(View.VISIBLE);
+            rlMainRequestTaxiLay.setVisibility(View.GONE);
+            txtStateUpdate.setText("Driver En Route");
+            txtStateUpdate.setVisibility(View.VISIBLE);
+            rlTop.setBackgroundColor(resources.getColor(R.color.colorEnRoute));
+            imgLoc.setVisibility(View.GONE);
+            rlProgress.setVisibility(View.GONE);
+            mMap.clear();
+            mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getLat(),beansMessage.getLng()))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+             mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+            Log.e("FILTER2",beansMessage.getLat()+"  "+endPosition.latitude);
+            showPolyAnim(beansMessage.getLat(),beansMessage.getLng(),startPostion.latitude,startPostion.longitude);
+
+        }
+        else if(state==4)
+        {
+            rlDriverFound.setVisibility(View.VISIBLE);
+            rlMainRequestTaxiLay.setVisibility(View.GONE);
+            txtStateUpdate.setText("Driving To Destination");
+            txtStateUpdate.setVisibility(View.VISIBLE);
+            rlButtonMain.setVisibility(View.GONE);
+            rlTop.setBackgroundColor(resources.getColor(R.color.colorEnRoute));
+            imgLoc.setVisibility(View.GONE);
+            rlProgress.setVisibility(View.GONE);
+            mMap.clear();
+            mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getLat(),beansMessage.getLng()))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.uber)));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.destination_flag)));
+            Log.e("FILTER2",beansMessage.getLat()+"  "+endPosition.latitude);
+            showPolyAnim(beansMessage.getLat(),beansMessage.getLng(),startPostion.latitude,startPostion.longitude);
+        }
+        else if(state==5)
+        {
+            rlDriverFound.setVisibility(View.GONE);
+            rlTop.setVisibility(View.GONE);
+            imgLoc.setVisibility(View.GONE);
+            rlProgress.setVisibility(View.GONE);
+            rlRating.setVisibility(View.VISIBLE);
+            mMap.clear();
+            mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.client_pin_centered)));
+        }
+
+    }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -482,8 +601,56 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                initView();
 
             case R.id.imgLoc:
+                if(mCurrentLoc!=null)
+                {
+                    CameraPosition position = CameraPosition.builder()
+                            .target( new LatLng( mCurrentLoc.getLatitude(),
+                                    mCurrentLoc.getLongitude()))
+                            .zoom(zoomLevel)
+                            .bearing( 0.0f )
+                            .tilt(0.0f )
+                            .build();
+                    mMap.animateCamera(CameraUpdateFactory
+                            .newCameraPosition(position), null);
+                }
 
             break;
+
+            case R.id.rlpriceInfo:
+
+                if(txtRequestRide.getText().toString().equals("Request Rideshare"))
+                {
+                    rlMainRequestTaxiLay.setVisibility(View.GONE);
+                    rlProgress.setVisibility(View.VISIBLE);
+                    BeansMessage beansMessage=new BeansMessage();
+                    beansMessage.setLat(startPostion.latitude);
+                    beansMessage.setLng(startPostion.longitude);
+                    beansMessage.setMessage("FindDriver");
+                    beansMessage.setType("Customer");
+                    chatterBoxServiceClient.publishHybrid("",beansMessage);
+                }
+
+                break;
+
+            case R.id.rlTop:
+                if(APP_STATE==2)
+                {
+                    BeansMessage beansMessage=new BeansMessage();
+                    beansMessage.setLat(endPosition.latitude);
+                    beansMessage.setLng(endPosition.longitude);
+                    beansMessage.setMessage("StartTrip");
+                    beansMessage.setType("Customer");
+                    chatterBoxServiceClient.publishHybrid("",beansMessage);
+                }
+                else if(APP_STATE==4)
+                {
+                    BeansMessage beansMessage=new BeansMessage();
+                    beansMessage.setLat(endPosition.latitude);
+                    beansMessage.setLng(endPosition.longitude);
+                    beansMessage.setMessage("CompleteTrip");
+                    beansMessage.setType("Customer");
+                    chatterBoxServiceClient.publishHybrid("",beansMessage);
+                }
         }
     }
 
