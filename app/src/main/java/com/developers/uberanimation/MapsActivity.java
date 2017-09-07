@@ -410,7 +410,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
                     .flat(true)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
-            setPolyInfo(beansMessage.getDrivarLat(),beansMessage.getDriverLng(),startPostion.latitude,startPostion.longitude);
+            setPolyInfo(beansMessage.getDrivarLat(),beansMessage.getDriverLng(),endPosition.latitude,endPosition.longitude);
         }
         else if(state==5)
         {
@@ -555,6 +555,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
                 break;
             case R.id.rlRatingSubmit:
+                rlRating.setVisibility(View.GONE);
                 rlDriverFound.setVisibility(View.GONE);
                 rlMainRequestTaxiLay.setVisibility(View.GONE);
                 imgLoc.setVisibility(View.VISIBLE);
