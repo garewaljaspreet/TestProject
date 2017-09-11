@@ -58,10 +58,14 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.Dash;
+import com.google.android.gms.maps.model.Dot;
+import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
@@ -70,6 +74,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -565,6 +570,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 imgLoc.setVisibility(View.VISIBLE);
                 rlProgress.setVisibility(View.GONE);
                 imgCenterPin.setVisibility(View.VISIBLE);
+                btnPick.setBackgroundResource(R.drawable.btn_pickup);
                 initView();
                 break;
 
@@ -573,6 +579,10 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
     private void initView()
     {
+        APP_STATE=0;
+        rlTop.setVisibility(View.VISIBLE);
+        txtStateUpdate.setVisibility(View.GONE);
+        rlTop.setBackgroundColor(resources.getColor(R.color.colortransparent));
         rlMainRequestTaxiLay.setVisibility(View.GONE);
         rlSelectMain.setVisibility(View.VISIBLE);
         mMap.clear();
@@ -724,7 +734,27 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     private void startAnim(ArrayList<LatLng> routelist){
         if(mMap != null) {
             moveToBounds(routelist);
-            MapAnimator.getInstance().animateRoute(mMap, routelist);
+            PolylineOptions polylineOptions = new PolylineOptions();
+            List<PatternItem> pattern = Arrays.<PatternItem>asList(
+                    new Dot(), new Gap(20), new Dash(30), new Gap(20));
+            // Setting the color of the polyline
+            polylineOptions.color(Color.BLACK);
+
+            polylineOptions.pattern(pattern);
+            // Setting the width of the polyline
+
+            polylineOptions.width(10);
+
+
+            // Setting points of polyline
+
+            polylineOptions.addAll(routelist);
+
+
+            // Adding the polyline to the map
+
+            mMap.addPolyline(polylineOptions);
+           // MapAnimator.getInstance().animateRoute(mMap, routelist);
         } else {
             Toast.makeText(getApplicationContext(), "Map not ready", Toast.LENGTH_LONG).show();
         }
@@ -738,8 +768,9 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             builder.include(routelist.get(i));
         }
         LatLngBounds bounds = builder.build();
-        int padding = 150; // offset from edges of the map in pixels
+        int padding = 300; // offset from edges of the map in pixels
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+
         mMap.animateCamera(cu);
     }
 
@@ -761,14 +792,18 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 for(int i=0 ; i<steps.size();i++){
                     step = steps.get(i);
                     location =step.getStart_location();
-                    routelist.add(new LatLng(location.getLat(), location.getLng()));
+                   // routelist.add(new LatLng(location.getLat(), location.getLng()));
                     Log.i("zacharia", "Start Location :" + location.getLat() + ", " + location.getLng());
                     polyline = step.getPolyline().getPoints();
                     decodelist = PolyUtil.decode(polyline);
                     routelist.addAll(decodelist);
                     location =step.getEnd_location();
-                    routelist.add(new LatLng(location.getLat() ,location.getLng()));
-                    Log.i("zacharia","End Location :"+location.getLat() +", "+location.getLng());
+                    for (int h=0;h<decodelist.size();h++)
+                    {
+                        Log.e("DECODE",decodelist.get(h).latitude+"    "+decodelist.get(h).longitude);
+                    }
+                  //  routelist.add(new LatLng(location.getLat() ,location.getLng()));
+                    Log.i("zacharia",decodelist.size()+"End Location :"+location.getLat() +", "+location.getLng());
                 }
             }
         }
