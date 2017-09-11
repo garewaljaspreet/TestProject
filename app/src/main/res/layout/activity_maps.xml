@@ -352,6 +352,7 @@
             android:layout_below="@+id/rlLocationTextView">
 
 
+
             <ImageView
                 android:id="@+id/imgTaxi"
                 android:layout_width="wrap_content"
@@ -360,6 +361,7 @@
                 android:layout_centerHorizontal="true"
                 android:layout_marginLeft="48dp"
                 android:background="@drawable/taxi_icon_off" />
+
 
             <ImageView
                 android:id="@+id/imgMyCar"
@@ -412,7 +414,7 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/txtTaxi"
                     android:layout_centerHorizontal="true"
-                    android:text="4 min away"
+                    android:text="4 MIN AWAY"
                     android:textColor="#000000"
                     android:textSize="12sp"
                     android:textStyle="normal" />
@@ -439,7 +441,7 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/txtRideShare"
                     android:layout_centerHorizontal="true"
-                    android:text="2 Min away"
+                    android:text="2 MIN AWAY"
                     android:textColor="#cdcdcd"
                     android:textSize="12sp"
                     android:textStyle="normal" />

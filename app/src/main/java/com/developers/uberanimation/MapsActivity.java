@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -14,6 +15,7 @@ import android.graphics.drawable.LayerDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -21,6 +23,7 @@ import android.os.ResultReceiver;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -78,6 +81,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     private GoogleMap mMap;
     ImageView imgMenu,imgLoc;
     private Button btnFrom,btnTo;
+    private AlertDialog dialog;
     int APP_STATE=0;
     CustomTextView txtCurrentLocation,txtStateUpdate;
     ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
@@ -1205,5 +1209,51 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         marker4.setAnchor(0.5f, 0.5f);
 
         animationStart();
+    }
+
+    private void showCallDialog()
+    {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this, R.style.AppCompatAlertDialogStyle);
+        builder.setTitle("Driver Number: 6044011476");
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        builder.setPositiveButton("OK",new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:" +"6044011476"));
+                startActivity(intent);
+            }
+        });
+
+        dialog = builder.create();
+        dialog.show();
+    }
+
+    private void showMessageDialog()
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this, R.style.AppCompatAlertDialogStyle);
+        builder.setTitle("Driver Number: 6044011476");
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        builder.setPositiveButton("OK",new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Intent.ACTION_SENDTO);
+                intent.setData(Uri.parse("smsto:" + Uri.encode("6044011476")));
+                startActivity(intent);
+            }
+        });
+        dialog = builder.create();
+        dialog.show();
     }
 }
