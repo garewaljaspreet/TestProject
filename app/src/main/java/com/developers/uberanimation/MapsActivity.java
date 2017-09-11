@@ -1,5 +1,8 @@
 package com.developers.uberanimation;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.ComponentName;
@@ -26,6 +29,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -69,6 +73,7 @@ import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
+import com.skyfishjy.library.RippleBackground;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -84,13 +89,13 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     String startAdd,endAdd;
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
-    ImageView imgMenu,imgLoc;
+    ImageView imgMenu,imgLoc,imgText,imgCancel,imgCall;
     private Button btnFrom,btnTo;
     private AlertDialog dialog;
     int APP_STATE=0;
     CustomTextView txtCurrentLocation,txtStateUpdate;
     ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
-    CustomTextView txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest,txtCurrentLocPopup,txtDestLocPopup;
+    CustomTextView txtCancelTrip,txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest,txtCurrentLocPopup,txtDestLocPopup;
     RelativeLayout rlPickDest,rlPickStart,rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
     RelativeLayout rlRatingSubmit,rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain,rlTop;
     private List<LatLng> polyLineList;
@@ -103,6 +108,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     private Location mLastLocation,mCurrentLoc;//Represents last known location
     ImageView imgCenterPin;
     ImageView btnPickDest,btnPick;
+    RippleBackground rippleBackground;
     private BeansPickAddress locationObj,oldLocationObj;
     private float v;
     private ChatterBoxClient chatterBoxServiceClient;       //To access service methods
@@ -196,6 +202,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         polyLineList = new ArrayList<>();
+        rippleBackground=(RippleBackground)findViewById(R.id.findDriverCustom);
         btnFrom= (Button) findViewById(R.id.btnFrom);
         imgCenterPin= (ImageView) findViewById(R.id.imgCenterPin);
         imgMenu= (ImageView) findViewById(R.id.imgMenu);
@@ -211,6 +218,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlSelectMain= (RelativeLayout) findViewById(R.id.rlSelectMain);
         rlRating= (RelativeLayout) findViewById(R.id.rlRating);
         rlProgress= (RelativeLayout) findViewById(R.id.rlProgress);
+        rlProgress.setOnClickListener(this);
         rlCurrentLocation= (RelativeLayout) findViewById(R.id.rlCurrentLocation);
         rlDriverFound= (RelativeLayout) findViewById(R.id.rlDriverFound);
         rlButtonMain= (RelativeLayout) findViewById(R.id.rlButtonMain);
@@ -221,7 +229,12 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlDestLoc= (RelativeLayout) findViewById(R.id.rlDestLoc);
         btnTo= (Button) findViewById(R.id.btnTo);
         rlMainRequestTaxiLay=(RelativeLayout)findViewById(R.id.rlMainRequestTaxiLay);
-
+        imgText=(ImageView)findViewById(R.id.imgText);
+        imgCall=(ImageView)findViewById(R.id.imgCall);
+        imgCancel=(ImageView)findViewById(R.id.imgCancel);
+        imgText.setOnClickListener(this);
+        imgCall.setOnClickListener(this);
+        imgCancel.setOnClickListener(this);
         imgTaxi=(ImageView)findViewById(R.id.imgTaxi);
         imgMyCar=(ImageView)findViewById(R.id.imgMyCar);
         imgRideShare=(ImageView)findViewById(R.id.imgRideshare);
@@ -229,6 +242,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         ratingBar=(RatingBar) findViewById(R.id.ratingBar);
         rlPriceInfo=(RelativeLayout)findViewById(R.id.rlpriceInfo);
         txtPrice=(CustomTextView)findViewById(R.id.txtPrice);
+        txtCancelTrip=(CustomTextView)findViewById(R.id.txtCancelTrip);
+        txtCancelTrip.setOnClickListener(this);
         txtRequestRide=(CustomTextView)findViewById(R.id.txtRequestRide);
         txtLocDest=(CustomTextView)findViewById(R.id.txtLocDest);
         txtLocDest.setOnClickListener(this);
@@ -298,7 +313,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 setPolyInfo(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
                 rlSelect.setVisibility(View.GONE);
                 rlSelectMain.setVisibility(View.GONE);
-                rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
+
+                startBottomViewAnim();
             }
         });
 
@@ -387,7 +403,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             txtStateUpdate.setVisibility(View.VISIBLE);
             rlTop.setBackgroundColor(resources.getColor(R.color.colorEnRoute));
             imgLoc.setVisibility(View.GONE);
-            rlProgress.setVisibility(View.GONE);
+            rippleBackground.setVisibility(View.GONE);
             mMap.clear();
             mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getDrivarLat(),beansMessage.getDriverLng()))
                     .flat(true)
@@ -411,7 +427,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             rlButtonMain.setVisibility(View.GONE);
             rlTop.setBackgroundColor(resources.getColor(R.color.colorEnRoute));
             imgLoc.setVisibility(View.GONE);
-            rlProgress.setVisibility(View.GONE);
+            rippleBackground.setVisibility(View.GONE);
             mMap.clear();
             mMap.addMarker(new MarkerOptions().position(new LatLng(beansMessage.getDrivarLat(),beansMessage.getDriverLng()))
                     .flat(true)
@@ -426,7 +442,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             rlDriverFound.setVisibility(View.GONE);
             rlTop.setVisibility(View.GONE);
             imgLoc.setVisibility(View.GONE);
-            rlProgress.setVisibility(View.GONE);
+            rippleBackground.setVisibility(View.GONE);
             rlRating.setVisibility(View.VISIBLE);
             mMap.clear();
             mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
@@ -489,6 +505,19 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
             case R.id.rlMainRequestTaxiLay:
                 break;
+            case R.id.txtCancelTrip:
+                btnPick.setBackgroundResource(R.drawable.btn_pickup);
+                initView();
+                break;
+            case R.id.rlProgress:
+                break;
+            case R.id.imgCall:
+                showCallDialog();
+                break;
+
+            case R.id.imgText:
+                showMessageDialog();
+                break;
 
             case R.id.txtCurrentLocation:
                   Intent intent=new Intent(MapsActivity.this,FindAddress.class);
@@ -524,7 +553,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
                 if(txtRequestRide.getText().toString().equals("Request Rideshare"))
                 {
-                    rlMainRequestTaxiLay.setVisibility(View.GONE);
+                    //rlMainRequestTaxiLay.setVisibility(View.GONE);
+                    startFindAnimation();
                     rlProgress.setVisibility(View.VISIBLE);
                     BeansMessage beansMessage=new BeansMessage();
                     beansMessage.setUserStartLat(startPostion.latitude);
@@ -569,6 +599,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 rlMainRequestTaxiLay.setVisibility(View.GONE);
                 imgLoc.setVisibility(View.VISIBLE);
                 rlProgress.setVisibility(View.GONE);
+                rippleBackground.stopRippleAnimation();
+                rippleBackground.setVisibility(View.GONE);
                 imgCenterPin.setVisibility(View.VISIBLE);
                 btnPick.setBackgroundResource(R.drawable.btn_pickup);
                 initView();
@@ -577,6 +609,58 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         }
     }
 
+    private void startFindAnimation()
+    {
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.setDuration(800);
+        animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
+        ArrayList<Animator> animatorList=new ArrayList<Animator>();
+        ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(rippleBackground, "ScaleX", 0f, 1.2f, 1f);
+        animatorList.add(scaleXAnimator);
+        ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(rippleBackground, "ScaleY", 0f, 1.2f, 1f);
+        ObjectAnimator scaleLayAnimator = ObjectAnimator.ofFloat(rlMainRequestTaxiLay, "translationY", 0f,rlMainRequestTaxiLay.getHeight()+400);
+        animatorList.add(scaleLayAnimator);
+        animatorList.add(scaleYAnimator);
+        animatorSet.playTogether(animatorList);
+        rippleBackground.setVisibility(View.VISIBLE);
+
+        animatorSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) {
+                Log.e("Animator ","start");
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                rippleBackground.setVisibility(View.VISIBLE);
+                rippleBackground.startRippleAnimation();
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) {
+
+            }
+        });
+        animatorSet.start();
+    }
+
+    private void startBottomViewAnim()
+    {
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.setDuration(600);
+        animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
+        ArrayList<Animator> animatorList=new ArrayList<Animator>();
+        ObjectAnimator scaleLayAnimator = ObjectAnimator.ofFloat(rlMainRequestTaxiLay, "translationY", rlMainRequestTaxiLay.getHeight()+400,0f);
+        animatorList.add(scaleLayAnimator);
+        rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
+        animatorSet.playTogether(animatorList);
+        animatorSet.start();
+    }
     private void initView()
     {
         APP_STATE=0;
@@ -588,19 +672,25 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         mMap.clear();
         imgCenterPin.setVisibility(View.VISIBLE);
         imgCenterPin.setBackgroundResource(R.drawable.icon_client_pin);
-        CameraPosition position = CameraPosition.builder()
-                .target( new LatLng( mCurrentLoc.getLatitude(),
-                        mCurrentLoc.getLongitude()))
-                .zoom(zoomLevel)
-                .bearing( 0.0f )
-                .tilt(0.0f )
-                .build();
-        mMap.animateCamera(CameraUpdateFactory
-                .newCameraPosition(position), null);
+        if(mCurrentLoc!=null)
+        {
+            CameraPosition position = CameraPosition.builder()
+                    .target( new LatLng( mCurrentLoc.getLatitude(),
+                            mCurrentLoc.getLongitude()))
+                    .zoom(zoomLevel)
+                    .bearing( 0.0f )
+                    .tilt(0.0f )
+                    .build();
+            mMap.animateCamera(CameraUpdateFactory
+                    .newCameraPosition(position), null);
+        }
+
         rlDestLoc.setVisibility(View.GONE);
         IsStartSet=false;
         IsEndSet=false;
         rlProgress.setVisibility(View.GONE);
+        rippleBackground.stopRippleAnimation();
+        rippleBackground.setVisibility(View.GONE);
         animationStart();
     }
 
@@ -684,7 +774,6 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         {
             rlSelect.setVisibility(View.GONE);
             rlSelectMain.setVisibility(View.GONE);
-            rlProgress.setVisibility(View.VISIBLE);
             imgCenterPin.setVisibility(View.GONE);
             rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
             beansAPNS=data.getParcelableExtra("addressInfo");
@@ -1251,6 +1340,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
         AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this, R.style.AppCompatAlertDialogStyle);
         builder.setTitle("Driver Number: 6044011476");
+        builder.setMessage("Do you want to send test message to your driver?");
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -1274,6 +1364,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this, R.style.AppCompatAlertDialogStyle);
         builder.setTitle("Driver Number: 6044011476");
+        builder.setMessage("Do you want to call your driver?");
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {

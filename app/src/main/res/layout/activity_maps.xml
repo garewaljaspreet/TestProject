@@ -1,6 +1,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:orientation="vertical">
 
 
@@ -77,31 +78,43 @@
     <RelativeLayout
         android:id="@+id/rlProgress"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:paddingBottom="10dp"
         android:background="@drawable/selector"
-        android:paddingLeft="15dp"
+        android:paddingLeft="25dp"
         android:visibility="gone"
-        android:paddingRight="15dp"
+        android:paddingRight="25dp"
         android:layout_alignParentBottom="true">
 
         <com.developers.uberanimation.CustomTextView
             android:id="@+id/txtFindDriver"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
             android:text="Finding Your Driver"
             android:textColor="#000000"
             android:textSize="16sp"
             android:layout_alignParentLeft="true"
             android:layout_marginLeft="10dp"/>
 
-        <ProgressBar
+       <!-- <ProgressBar
             android:layout_below="@+id/txtFindDriver"
             android:theme="@style/LinearProgress"
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:indeterminate="true"
-            android:layout_height="15dp"/>
+            android:layout_height="15dp"/>-->
+
+        <com.developers.uberanimation.CustomTextView
+            android:id="@+id/txtCancelTrip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="Cancel"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="10dp"/>
 
     </RelativeLayout>
     
@@ -656,4 +669,37 @@
                 android:textColor="#ffffff"/>
         </RelativeLayout>
     </RelativeLayout>
+
+    <com.skyfishjy.library.RippleBackground
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#00000000"
+        android:id="@+id/findDriverCustom"
+        android:visibility="gone"
+        app:rb_color="#0099CC"
+        app:rb_radius="32dp"
+        app:rb_type="fillRipple"
+        app:rb_rippleAmount="9"
+        app:rb_duration="3000"
+        app:rb_scale="9">
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_centerInParent="true"
+            android:id="@+id/centerImage"
+            android:src="@drawable/rideshare_icon_on"/>
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:id="@+id/foundDevice"
+            android:layout_above="@id/centerImage"
+            android:layout_marginBottom="32dp"
+            android:layout_toLeftOf="@id/centerImage"
+            android:layout_marginRight="6dp"
+            android:src="@drawable/rideshare_icon_on"
+            android:visibility="invisible"/>
+    </com.skyfishjy.library.RippleBackground>
+
 </RelativeLayout>
