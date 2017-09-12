@@ -29,6 +29,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
@@ -67,6 +68,7 @@ import com.google.android.gms.maps.model.Dot;
 import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PatternItem;
@@ -95,8 +97,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
     int APP_STATE=0;
     CustomTextView txtCurrentLocation,txtStateUpdate;
     ImageView imgTaxi,imgRideShare,imgMyCar,imgPartition;
-    CustomTextView txtCancelTrip,txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest,txtCurrentLocPopup,txtDestLocPopup;
-    RelativeLayout rlPickDest,rlPickStart,rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
+    CustomTextView txtSelectType,txtCancelTrip,txtClose,txtPrice,txtRequestRide,txtTaxi,txtTimeTaxi,txtRideShare,txtTimeRideshare,txtMyCar,txtChooseDriver,txtLocDest,txtCurrentLocPopup,txtDestLocPopup;
+    RelativeLayout rlSelectButton,rlPickDest,rlPickStart,rlRating,rlMainRequestTaxiLay,rlPriceInfo,rlMainSetLocationLay,rlDriverFound,rlButtonMain;
     RelativeLayout rlRatingSubmit,rlSelect,rlProgress,rlCurrentLocation,rlDestLoc,rlSelectMain,rlTop;
     private List<LatLng> polyLineList;
     BeansMessage beansMessage;
@@ -213,6 +215,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlRatingSubmit= (RelativeLayout) findViewById(R.id.rlRatingSubmit);
         rlPickDest= (RelativeLayout) findViewById(R.id.rlPickDest);
         rlPickStart= (RelativeLayout) findViewById(R.id.rlPickStart);
+        rlSelectButton= (RelativeLayout) findViewById(R.id.rlSelectButton);
+        rlSelectButton.setOnClickListener(this);
         rlRatingSubmit.setOnClickListener(this);
         rlSelect= (RelativeLayout) findViewById(R.id.rlSelect);
         rlSelectMain= (RelativeLayout) findViewById(R.id.rlSelectMain);
@@ -253,6 +257,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         txtTimeTaxi=(CustomTextView)findViewById(R.id.txtTimeTaxi);
         txtRideShare=(CustomTextView)findViewById(R.id.txtRideShare);
         txtTimeRideshare=(CustomTextView)findViewById(R.id.txtTimeRideshare);
+        txtSelectType=(CustomTextView)findViewById(R.id.txtSelectType);
         txtMyCar=(CustomTextView)findViewById(R.id.txtMyCar);
         txtChooseDriver=(CustomTextView)findViewById(R.id.txtChooseDriver);
         txtClose=(CustomTextView)findViewById(R.id.txtClose);
@@ -265,10 +270,17 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlMainRequestTaxiLay.setOnClickListener(this);
         txtCurrentLocation.setOnClickListener(this);
         rlPriceInfo.setOnClickListener(this);
-        txtPrice.setText("$6.00");
-        txtRequestRide.setText("Request Taxi");
-        txtTaxi.setTextColor(Color.parseColor("#272727"));
-        txtTimeTaxi.setTextColor(Color.parseColor("#272727"));
+
+        /*final ViewTreeObserver observer= rlMainRequestTaxiLay.getViewTreeObserver();
+        observer.addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        Log.d("HEight", "Height: " + rlMainRequestTaxiLay.getHeight());
+                    }
+                });*/
+
+        selectMode(2);
 
         LayerDrawable stars = (LayerDrawable) ratingBar.getProgressDrawable();
         stars.getDrawable(2).setColorFilter(Color.parseColor("#0077A6"), PorterDuff.Mode.SRC_ATOP);
@@ -280,45 +292,10 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlPickStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(IsStartSet) {
-                    initView();
-                    btnPick.setBackgroundResource(R.drawable.btn_pickup);
-                }
-                else
-                {
-                    subscribePubnub();
-                    txtCurrentLocPopup.setText(startAdd);
-                    btnPick.setBackgroundResource(R.drawable.close_icon);
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
-                            .flat(true)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_client_pin_spc)));
-                    imgCenterPin.setBackgroundResource(R.drawable.icon_destination_flag);
-                    rlDestLoc.setVisibility(View.VISIBLE);
-                    IsStartSet=true;
-                }
+                initView();
 
             }
         });
-        rlPickDest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-               /* Intent intent=new Intent(MapsActivity.this,FindAddress.class);
-                startActivityForResult(intent,1);*/
-                txtDestLocPopup.setText(endAdd);
-                mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
-                        .flat(true)
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
-                imgCenterPin.setVisibility(View.GONE);
-                IsEndSet=true;
-                setPolyInfo(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
-                rlSelect.setVisibility(View.GONE);
-                rlSelectMain.setVisibility(View.GONE);
-
-                startBottomViewAnim();
-            }
-        });
-
-
 
     }
 
@@ -452,62 +429,108 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
     }
 
+    private void selectMode(int type)
+    {
+        if(type==1)
+        {
+            rlPriceInfo.setBackgroundResource(R.drawable.rounded_border);
+            imgTaxi.setBackgroundResource(R.drawable.taxi_icon_on);
+            imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_off);
+            imgMyCar.setBackgroundResource(R.drawable.chauffeur_grey);
+            txtPrice.setVisibility(View.VISIBLE);
+            imgPartition.setVisibility(View.VISIBLE);
+            txtPrice.setText("$6.00");
+            txtRequestRide.setText("Request Taxi");
+            txtTaxi.setTextColor(Color.parseColor("#272727"));
+            txtTimeTaxi.setTextColor(Color.parseColor("#272727"));
+            txtRideShare.setTextColor(Color.parseColor("#cdcdcd"));
+            txtTimeRideshare.setTextColor(Color.parseColor("#cdcdcd"));
+            txtMyCar.setTextColor(Color.parseColor("#cdcdcd"));
+            txtChooseDriver.setTextColor(Color.parseColor("#cdcdcd"));
+        }
+        else if(type==2)
+        {
+            rlPriceInfo.setBackgroundResource(R.drawable.rounded_border_blue);
+            imgTaxi.setBackgroundResource(R.drawable.taxi_icon_off);
+            imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_on);
+            imgMyCar.setBackgroundResource(R.drawable.chauffeur_grey);
+            txtPrice.setVisibility(View.VISIBLE);
+            imgPartition.setVisibility(View.VISIBLE);
+            txtPrice.setText("$6.00");
+            txtRequestRide.setText("Request Rideshare");
+            txtTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+            txtTimeTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+            txtRideShare.setTextColor(Color.parseColor("#272727"));
+            txtTimeRideshare.setTextColor(Color.parseColor("#272727"));
+            txtMyCar.setTextColor(Color.parseColor("#cdcdcd"));
+            txtChooseDriver.setTextColor(Color.parseColor("#cdcdcd"));
+        }
+        else
+        {
+            rlPriceInfo.setBackgroundResource(R.drawable.rounded_border_green);
+            imgTaxi.setBackgroundResource(R.drawable.taxi_icon_off);
+            imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_off);
+            imgMyCar.setBackgroundResource(R.drawable.chauffeur_icon_on);
+            txtPrice.setVisibility(View.GONE);
+            imgPartition.setVisibility(View.GONE);
+            txtRequestRide.setText("Choose Driver");
+            txtTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+            txtTimeTaxi.setTextColor(Color.parseColor("#cdcdcd"));
+            txtRideShare.setTextColor(Color.parseColor("#cdcdcd"));
+            txtTimeRideshare.setTextColor(Color.parseColor("#cdcdcd"));
+            txtMyCar.setTextColor(Color.parseColor("#272727"));
+            txtChooseDriver.setTextColor(Color.parseColor("#272727"));
+        }
+    }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.imgTaxi:
-                rlPriceInfo.setBackgroundResource(R.drawable.rounded_border);
-                imgTaxi.setBackgroundResource(R.drawable.taxi_icon_on);
-                imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_off);
-                imgMyCar.setBackgroundResource(R.drawable.chauffeur_grey);
-                txtPrice.setVisibility(View.VISIBLE);
-                imgPartition.setVisibility(View.VISIBLE);
-                txtPrice.setText("$6.00");
-                txtRequestRide.setText("Request Taxi");
-                txtTaxi.setTextColor(Color.parseColor("#272727"));
-                txtTimeTaxi.setTextColor(Color.parseColor("#272727"));
-                txtRideShare.setTextColor(Color.parseColor("#cdcdcd"));
-                txtTimeRideshare.setTextColor(Color.parseColor("#cdcdcd"));
-                txtMyCar.setTextColor(Color.parseColor("#cdcdcd"));
-                txtChooseDriver.setTextColor(Color.parseColor("#cdcdcd"));
+                selectMode(1);
                 break;
             case R.id.imgRideshare:
-                rlPriceInfo.setBackgroundResource(R.drawable.rounded_border_blue);
-                imgTaxi.setBackgroundResource(R.drawable.taxi_icon_off);
-                imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_on);
-                imgMyCar.setBackgroundResource(R.drawable.chauffeur_grey);
-                txtPrice.setVisibility(View.VISIBLE);
-                imgPartition.setVisibility(View.VISIBLE);
-                txtPrice.setText("$6.00");
-                txtRequestRide.setText("Request Rideshare");
-                txtTaxi.setTextColor(Color.parseColor("#cdcdcd"));
-                txtTimeTaxi.setTextColor(Color.parseColor("#cdcdcd"));
-                txtRideShare.setTextColor(Color.parseColor("#272727"));
-                txtTimeRideshare.setTextColor(Color.parseColor("#272727"));
-                txtMyCar.setTextColor(Color.parseColor("#cdcdcd"));
-                txtChooseDriver.setTextColor(Color.parseColor("#cdcdcd"));
+                selectMode(2);
                 break;
             case R.id.imgMyCar:
-                rlPriceInfo.setBackgroundResource(R.drawable.rounded_border_green);
-                imgTaxi.setBackgroundResource(R.drawable.taxi_icon_off);
-                imgRideShare.setBackgroundResource(R.drawable.rideshare_icon_off);
-                imgMyCar.setBackgroundResource(R.drawable.chauffeur_icon_on);
-                txtPrice.setVisibility(View.GONE);
-                imgPartition.setVisibility(View.GONE);
-                txtRequestRide.setText("Choose Driver");
-                txtTaxi.setTextColor(Color.parseColor("#cdcdcd"));
-                txtTimeTaxi.setTextColor(Color.parseColor("#cdcdcd"));
-                txtRideShare.setTextColor(Color.parseColor("#cdcdcd"));
-                txtTimeRideshare.setTextColor(Color.parseColor("#cdcdcd"));
-                txtMyCar.setTextColor(Color.parseColor("#272727"));
-                txtChooseDriver.setTextColor(Color.parseColor("#272727"));
+                selectMode(3);
                 break;
 
             case R.id.rlMainRequestTaxiLay:
                 break;
             case R.id.txtCancelTrip:
-                btnPick.setBackgroundResource(R.drawable.btn_pickup);
                 initView();
+                break;
+            case R.id.rlSelectButton:
+                if(IsStartSet) {
+
+                    txtDestLocPopup.setText(endAdd);
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(endPosition.latitude,endPosition.longitude))
+                            .flat(true)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_destination_flag_spc)));
+                    imgCenterPin.setVisibility(View.GONE);
+                    IsEndSet=true;
+                    setPolyInfo(startPostion.latitude,startPostion.longitude,endPosition.latitude,endPosition.longitude);
+                    rlSelect.setVisibility(View.GONE);
+                    rlSelectMain.setVisibility(View.GONE);
+
+                    startBottomViewAnim();
+                }
+                else
+                {
+                    rlPickStart.setVisibility(View.VISIBLE);
+                    subscribePubnub();
+                    txtCurrentLocPopup.setText(startAdd);
+                    btnPick.setBackgroundResource(R.drawable.close_icon);
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(startPostion.latitude,startPostion.longitude))
+                            .flat(true)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_client_pin_spc)));
+                    imgCenterPin.setBackgroundResource(R.drawable.icon_destination_flag);
+                    rlDestLoc.setVisibility(View.VISIBLE);
+                    IsStartSet=true;
+                    rlSelectButton.setBackgroundResource(R.drawable.rounded_border_green);
+                    txtSelectType.setText("Set Destination");
+                }
                 break;
             case R.id.rlProgress:
                 break;
@@ -521,16 +544,37 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
             case R.id.txtCurrentLocation:
                   Intent intent=new Intent(MapsActivity.this,FindAddress.class);
+                BeansAPNS beansStart=new BeansAPNS();
+                if(startAdd!=null&&!startAdd.equals(""))
+                {
+                    beansStart.setStartLatitude(startPostion.latitude);
+                    beansStart.setStartLongitude(startPostion.longitude);
+                    beansStart.setStrStartAdd(startAdd);
+                    beansStart.setEndLatitude(0.0);
+                    beansStart.setEndLongitude(0.0);
+                    beansStart.setStrEndAdd("");
+                    intent.putExtra("StartLocInfo",beansStart);
+                }
                 startActivityForResult(intent,1);
                 break;
 
             case R.id.txtLocDest:
                 Intent intent1=new Intent(MapsActivity.this,FindAddress.class);
+                BeansAPNS beans=new BeansAPNS();
+                if(startAdd!=null&&!startAdd.equals(""))
+                {
+                    beans.setStartLatitude(startPostion.latitude);
+                    beans.setStartLongitude(startPostion.longitude);
+                    beans.setStrStartAdd(startAdd);
+                    beans.setEndLatitude(0.0);
+                    beans.setEndLongitude(0.0);
+                    beans.setStrEndAdd("");
+                    intent1.putExtra("StartLocInfo",beans);
+                }
                 startActivityForResult(intent1,1);
                 break;
 
             case R.id.txtClose:
-                btnPick.setBackgroundResource(R.drawable.btn_pickup);
                initView();
 
             case R.id.imgLoc:
@@ -602,7 +646,6 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
                 rippleBackground.stopRippleAnimation();
                 rippleBackground.setVisibility(View.GONE);
                 imgCenterPin.setVisibility(View.VISIBLE);
-                btnPick.setBackgroundResource(R.drawable.btn_pickup);
                 initView();
                 break;
 
@@ -651,6 +694,8 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
     private void startBottomViewAnim()
     {
+
+        mMap.setPadding(0,0,0,808);
         AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.setDuration(600);
         animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
@@ -660,9 +705,17 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
         rlMainRequestTaxiLay.setVisibility(View.VISIBLE);
         animatorSet.playTogether(animatorList);
         animatorSet.start();
+        Log.e("Padding",rlMainRequestTaxiLay.getHeight()+"  ");
+
     }
     private void initView()
     {
+        rlPickStart.setVisibility(View.GONE);
+        rlSelectButton.setBackgroundResource(R.drawable.rounded_border_blue);
+        txtSelectType.setText("Set Pickup");
+        mMap.setPadding(0,0,0,0);
+        startAdd="";
+        endAdd="";
         APP_STATE=0;
         rlTop.setVisibility(View.VISIBLE);
         txtStateUpdate.setVisibility(View.GONE);
@@ -857,7 +910,7 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
             builder.include(routelist.get(i));
         }
         LatLngBounds bounds = builder.build();
-        int padding = 300; // offset from edges of the map in pixels
+        int padding = 200; // offset from edges of the map in pixels
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
 
         mMap.animateCamera(cu);
@@ -1053,6 +1106,19 @@ public class MapsActivity extends FragmentActivity implements View.OnClickListen
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, R.raw.style_json));
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
         mMap = googleMap;
         final double latitude = 28.671246;
         double longitude = 77.317654;

@@ -44,6 +44,7 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
     GoogleApiClient mGoogleApiClient;
     Place startAdd,endAdd;
     boolean IS_Start=false;
+    BeansAPNS beansData;
     VehicleListAdapter mAdapter;
     TextWatcher txtWatchCurrent,txtWatchDest;
     ArrayList<BeansPrediction> resultList = new ArrayList<BeansPrediction>();
@@ -52,6 +53,7 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.find_main);
         AndroidBug5497Workaround.assistActivity(this);
+
         edCurrent=(EditText) findViewById(R.id.edCurrent);
         edDest=(EditText) findViewById(R.id.edDest);
         txtSkip=(TextView) findViewById(R.id.txtSkip);
@@ -63,7 +65,17 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
         rlPickDest.setOnClickListener(this);
         recyclerView=(RecyclerView) findViewById(R.id.recyclerView);
         txtSkip.setVisibility(View.GONE);
+        beansData=getIntent().getParcelableExtra("StartLocInfo");
+        edCurrent.setCursorVisible(false);
+        if(beansData!=null)
+        {
+            edCurrent.setText(beansData.getStrStartAdd());
 
+        }
+        else
+        {
+            beansData=null;
+        }
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Places.GEO_DATA_API)
                 .addApi(Places.PLACE_DETECTION_API)
@@ -213,11 +225,19 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
         txtSkip.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e("Click",startAdd.getLatLng().latitude+"Find"+startAdd.getLatLng().longitude);
                 BeansAPNS beans=new BeansAPNS();
-                beans.setStartLatitude(startAdd.getLatLng().latitude);
-                beans.setStartLongitude(startAdd.getLatLng().longitude);
-                beans.setStrStartAdd(startAdd.getAddress().toString());
+                if(beansData==null)
+                {
+                    beans.setStartLatitude(startAdd.getLatLng().latitude);
+                    beans.setStartLongitude(startAdd.getLatLng().longitude);
+                    beans.setStrStartAdd(startAdd.getAddress().toString());
+                }
+                else
+                {
+                    beans.setStartLatitude(beansData.getStartLatitude());
+                    beans.setStartLongitude(beansData.getStartLongitude());
+                    beans.setStrStartAdd(beansData.getStrStartAdd());
+                }
                 beans.setStrEndAdd(endAdd.getAddress().toString());
                 beans.setEndLongitude(endAdd.getLatLng().longitude);
                 beans.setEndLatitude(endAdd.getLatLng().latitude);
@@ -271,7 +291,7 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
                 if (places.getStatus().isSuccess()) {
                     Place place=places.get(0);
                     if(IS_Start) {
-
+                        beansData=null;
                         hideSoftKeyboard(FindAddress.this,edCurrent);
                         edCurrent.setCursorVisible(false);
                         edCurrent.removeTextChangedListener(txtWatchCurrent);
@@ -284,7 +304,6 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
                     }
                     else {
                         hideSoftKeyboard(FindAddress.this,edDest);
-                        txtSkip.setVisibility(View.VISIBLE);
                         edDest.setCursorVisible(false);
                         edDest.removeTextChangedListener(txtWatchDest);
                         endAdd = place;
@@ -293,8 +312,13 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
                         edDest.setSelection(edDest.getText().length());
                         edDest.addTextChangedListener(txtWatchDest);
                     }
-
-                    Log.e("Success"," "+places.get(0).getLatLng().longitude+"    "+places.get(0).getLatLng().latitude+"   ");
+                    if(!edCurrent.getText().toString().trim().equals("")&&!edDest.getText().toString().trim().equals(""))
+                    {
+                        txtSkip.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        txtSkip.setVisibility(View.GONE);
+                    }
                 } else {
                     Log.e("Error","Test  ");
                 }
