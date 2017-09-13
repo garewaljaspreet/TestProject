@@ -366,12 +366,14 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
             case R.id.rlPick:
                 rlNoData.setVisibility(View.VISIBLE);
                 edCurrent.setText("");
+                mAdapter.clear();
                 txtSkip.setVisibility(View.GONE);
                 break;
 
             case R.id.rlPickDest:
                 rlNoData.setVisibility(View.VISIBLE);
                 edDest.setText("");
+                mAdapter.clear();
                 txtSkip.setVisibility(View.GONE);
                 break;
 
