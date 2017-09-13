@@ -168,5 +168,117 @@
         android:layout_below="@+id/rlSelectMain"
         android:layout_width="match_parent"
         android:layout_height="match_parent"></android.support.v7.widget.RecyclerView>
+    <RelativeLayout
+        android:id="@+id/rlNoData"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/rlSelectMain">
+        <RelativeLayout
+            android:id="@+id/rlHome"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            >
+
+            <ImageView
+                android:id="@+id/imgHome"
+                android:layout_marginLeft="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_home_black_24px"
+                android:layout_centerVertical="true"/>
+
+            <com.developers.uberanimation.CustomTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:layout_marginLeft="20dp"
+                android:layout_toRightOf="@+id/imgHome"
+                android:layout_centerVertical="true"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:text="Add home"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#DBDBDB"
+                android:layout_alignParentBottom="true"
+                />
+        </RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/rlWork"
+            android:layout_width="match_parent"
+            android:layout_below="@+id/rlHome"
+            android:layout_height="50dp"
+            >
+
+            <ImageView
+                android:id="@+id/imgWork"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/ic_work_black_24px"
+                android:layout_centerVertical="true"/>
+
+            <com.developers.uberanimation.CustomTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:layout_marginLeft="20dp"
+                android:layout_toRightOf="@+id/imgWork"
+                android:layout_centerVertical="true"
+                android:textColor="#000000"
+                android:text="Add work"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#DBDBDB"
+                android:layout_alignParentBottom="true"
+                />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/rlCustom"
+            android:layout_width="match_parent"
+            android:layout_below="@+id/rlWork"
+            android:layout_height="50dp"
+            >
+
+            <ImageView
+                android:id="@+id/imgCustom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/ic_home_black_24px"
+                android:visibility="invisible"
+                android:layout_centerVertical="true"/>
+
+            <com.developers.uberanimation.CustomTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:layout_marginLeft="20dp"
+                android:layout_toRightOf="@+id/imgCustom"
+                android:layout_centerVertical="true"
+                android:textColor="#000000"
+                android:text="Add custom shortcut"/>
+
+
+        </RelativeLayout>
+        <View
+            android:id="@+id/imgView"
+            android:layout_below="@+id/rlCustom"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:background="#DBDBDB"
+            />
+
+        <ImageView
+            android:layout_below="@+id/imgView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            />
+    </RelativeLayout>
 
 </RelativeLayout>

@@ -31,15 +31,18 @@ import com.google.android.gms.location.places.AutocompletePredictionBuffer;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class FindAddress extends AppCompatActivity implements View.OnClickListener,ISelectAddress,GoogleApiClient.OnConnectionFailedListener,GoogleApiClient.ConnectionCallbacks{
-
+    private static final LatLngBounds BOUNDS_MOUNTAIN_VIEW = new LatLngBounds(
+            new LatLng(49.041638, -122.703781), new LatLng(49.051089, -122.885742));
     RecyclerView recyclerView;
     EditText edCurrent,edDest;
-    RelativeLayout rlPick,rlPickDest;
+    RelativeLayout rlPick,rlPickDest,rlNoData;
     TextView txtSkip,txtCancel;
     GoogleApiClient mGoogleApiClient;
     Place startAdd,endAdd;
@@ -61,6 +64,7 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
         txtCancel.setOnClickListener(this);
         rlPick=(RelativeLayout) findViewById(R.id.rlPick);
         rlPickDest=(RelativeLayout) findViewById(R.id.rlPickDest);
+        rlNoData=(RelativeLayout) findViewById(R.id.rlNoData);
         rlPick.setOnClickListener(this);
         rlPickDest.setOnClickListener(this);
         recyclerView=(RecyclerView) findViewById(R.id.recyclerView);
@@ -112,13 +116,14 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if(s.length()>0)
                 {
+
                     final PendingResult<AutocompletePredictionBuffer> result =
                             Places.GeoDataApi.getAutocompletePredictions(mGoogleApiClient, s.toString(), null, null);
 
                     result.setResultCallback(new ResultCallback<AutocompletePredictionBuffer>() {
                         @Override public void onResult(@NonNull AutocompletePredictionBuffer autocompletePredictions) {
                             // Iterate through results and display them in list or other UI
-
+                            rlNoData.setVisibility(View.GONE);
                             Iterator<AutocompletePrediction> iterator = autocompletePredictions.iterator();
                             resultList = new ArrayList<BeansPrediction>();
                             while (iterator.hasNext()) {
@@ -180,6 +185,7 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
                     result.setResultCallback(new ResultCallback<AutocompletePredictionBuffer>() {
                         @Override public void onResult(@NonNull AutocompletePredictionBuffer autocompletePredictions) {
                             // Iterate through results and display them in list or other UI
+                            rlNoData.setVisibility(View.GONE);
                             IS_Start=false;
                             Iterator<AutocompletePrediction> iterator = autocompletePredictions.iterator();
                             resultList = new ArrayList<BeansPrediction>();
@@ -252,7 +258,33 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        Log.e("Connected","here");
+        /*AutocompleteFilter filter = new AutocompleteFilter.Builder().setTypeFilter(AutocompleteFilter.TYPE_FILTER_ESTABLISHMENT).setCountry("CA").build();
+        final PendingResult<AutocompletePredictionBuffer> result =
+                Places.GeoDataApi.getAutocompletePredictions(mGoogleApiClient, "", BOUNDS_MOUNTAIN_VIEW, filter);
 
+        result.setResultCallback(new ResultCallback<AutocompletePredictionBuffer>() {
+            @Override public void onResult(@NonNull AutocompletePredictionBuffer autocompletePredictions) {
+                // Iterate through results and display them in list or other UI
+                Log.e("Connected","hereInside");
+                IS_Start=false;
+                Iterator<AutocompletePrediction> iterator = autocompletePredictions.iterator();
+                resultList = new ArrayList<BeansPrediction>();
+                while (iterator.hasNext()) {
+                    AutocompletePrediction prediction = iterator.next();
+                    BeansPrediction beansPrediction=new BeansPrediction();
+                    beansPrediction.setStrFullTxt(prediction.getFullText(null).toString());
+                    beansPrediction.setStrPlaceId(prediction.getPlaceId());
+                    beansPrediction.setStrPrimaryTxt(prediction.getPrimaryText(null).toString());
+                    resultList.add(beansPrediction);
+                    // Only include U.S. cities
+                    // States only have 1 comma (e.g. AK, United States). Don't include states.
+                }
+                mAdapter.notifyData(resultList);
+                autocompletePredictions.release();
+            }
+        });
+*/
     }
 
     @Override
@@ -332,11 +364,13 @@ public class FindAddress extends AppCompatActivity implements View.OnClickListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.rlPick:
+                rlNoData.setVisibility(View.VISIBLE);
                 edCurrent.setText("");
                 txtSkip.setVisibility(View.GONE);
                 break;
 
             case R.id.rlPickDest:
+                rlNoData.setVisibility(View.VISIBLE);
                 edDest.setText("");
                 txtSkip.setVisibility(View.GONE);
                 break;
